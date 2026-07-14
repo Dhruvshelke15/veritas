@@ -1,0 +1,42 @@
+{
+  "scope": "F-1 student to work pathways: OPT, STEM OPT, cap-gap, H-1B transition",
+  "documents": [
+    {
+      "filename": "uscis_opt_f1_students.md",
+      "title": "Optional Practical Training (OPT) for F-1 Students",
+      "source_url": "https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-opt-for-f-1-students",
+      "publisher": "USCIS"
+    },
+    {
+      "filename": "uscis_stem_opt_extension.md",
+      "title": "Optional Practical Training Extension for STEM Students (STEM OPT)",
+      "source_url": "https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-extension-for-stem-students-stem-opt",
+      "publisher": "USCIS"
+    },
+    {
+      "filename": "uscis_policy_manual_vol2_f_ch5.md",
+      "title": "USCIS Policy Manual, Volume 2, Part F, Chapter 5: Practical Training",
+      "source_url": "https://www.uscis.gov/policy-manual/volume-2-part-f-chapter-5",
+      "publisher": "USCIS"
+    },
+    {
+      "filename": "uscis_cap_gap_extension.md",
+      "title": "Extension of Post-Completion OPT and F-1 Status under the H-1B Cap-Gap Regulations",
+      "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/h-1b-specialty-occupations/extension-of-post-completion-optional-practical-training-opt-and-f-1-status-for-eligible-students",
+      "publisher": "USCIS"
+    },
+    {
+      "filename": "ice_sevis_practical_training.md",
+      "title": "Practical Training (CPT and OPT overview)",
+      "source_url": "https://www.ice.gov/sevis/practical-training",
+      "publisher": "ICE SEVP"
+    },
+    {
+      "filename": "i765_instructions.pdf",
+      "title": "Instructions for Form I-765, Application for Employment Authorization",
+      "source_url": "https://www.uscis.gov/i-765",
+      "publisher": "USCIS",
+      "note": "Download the instructions PDF linked on this page"
+    }
+  ]
+}

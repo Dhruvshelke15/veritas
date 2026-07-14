@@ -1,0 +1,61 @@
+#  Practical Training
+
+## Authorities
+
+8 CFR 214.2(f)(10)-(12)
+
+8 CFR 274a.12(b)(6)(iv)
+
+## Practical Training
+
+If you are an F student, you have the option of training in the United States by engaging in practical training during your program or after it ends. Practical training can provide valuable work experience by sharpening and adding to the skills you are learning in school. There are two types of practical training available for F-1 students: curricular practical training (CPT) and optional practical training (OPT).
+
+## CPT
+
+  * CPT is integral to your major and the experience must be part of your program of study.
+  * When you enroll at the graduate level, your designated school official (DSO) may authorize CPT during your first semester if your program requires this type of experience. Ask your DSO for details.
+  * Your DSO will provide you a new Form I-20, “Certificate of Eligibility for Nonimmigrant Student Status,” that shows that the DSO has approved you for this employment.
+  * You can work on CPT either full-time or part-time.
+  * CPT requires a signed cooperative agreement or a letter from your employer.
+  * If you have 12 months or more of full-time CPT, you are ineligible for OPT, but part-time CPT is fine and will not stop you from doing OPT.
+
+
+
+## OPT
+
+  * OPT must relate to your major or course of study.
+  * You can apply for 12 months of OPT at each education level, (i.e., you may have 12 months of OPT at the bachelor’s level and another 12 months of OPT at the master’s level).
+  * Your DSO will provide you with a new Form I-20 that shows the DSO recommendation for this employment.
+  * For work authorization, you must mail a completed Form I-765, “Application for Employment Authorization,” to U.S. Citizenship and Immigration Services (USCIS) and pay a filing fee. USCIS will send you a Form I-766, “Employment Authorization Document,” (EAD) upon approving your Form I-765.
+  * Wait to start work until after you receive your EAD.
+  * While school is in session, you may only work 20 hours per week.
+
+
+
+## 24-Month STEM OPT Extension
+
+All F-1 students who are currently on a regular period of OPT and are eligible for a STEM OPT extension must apply for the 24-month STEM OPT extension.
+
+  * You may qualify for an additional 24 months of OPT under the following circumstances:
+    * You are currently participating in a regular period of OPT.
+    * You received a science, technology, engineering or mathematics (STEM) degree at an undergraduate level or higher and seek a training opportunity related to this degree.
+    * You received your qualifying STEM degree from a currently accredited SEVP-certified college or university.
+    * The employer from which you are seeking employment uses the E-Verify program.
+    * You and your prospective employer have completed and signed the Form I-983, “Training Plan for STEM OPT Students.”
+    * For more information about the specific eligibility requirements for the 24-month STEM OPT extension, please visit the STEM OPT Hub on Study in the States.
+  * Once your DSO verifies that your Form I-983 is complete and keeps it in your student record, they will provide you with a new Form I-20 that shows their recommendation for this training opportunity.
+  * You must apply for work authorization by filing a Form I-765 with USCIS and paying a filing fee. USCIS will send you an EAD upon approving your petition.
+  * You may continue to work on your expired EAD for OPT up to 180 days while your 24-month extension petition is pending if you meet the following conditions:
+    * You are currently in a period of post-completion OPT.
+    * You properly and in a timely manner filed your application for the 24-month extension with USCIS.
+  * You must report changes in name, address, employer and loss of employment to your DSO within 10 days of any change.
+
+
+
+## M-1 Students and Practical Training
+
+Practical training is the only type of work permission available to M-1 students, with eligible students allowed to receive on-the-job-training for as many as six months after completing their program. Visit Study in the States to learn more.
+
+## Local Footer Navigation
+
+Updated: 12/10/2024

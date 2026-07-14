@@ -1,0 +1,102 @@
+{"query": "How long is the initial post-completion OPT period?", "label": "factual"}
+{"query": "How many months does the STEM OPT extension add?", "label": "factual"}
+{"query": "What is the maximum number of unemployment days allowed on post-completion OPT?", "label": "factual"}
+{"query": "What is an EAD?", "label": "factual"}
+{"query": "What does DSO stand for?", "label": "factual"}
+{"query": "What form do I file to apply for OPT work authorization?", "label": "factual"}
+{"query": "When does the cap-gap extension start and end?", "label": "factual"}
+{"query": "Does my employer need to be enrolled in E-Verify for STEM OPT?", "label": "factual"}
+{"query": "How many hours per week can I work on pre-completion OPT while school is in session?", "label": "factual"}
+{"query": "What is the grace period after OPT ends?", "label": "factual"}
+{"query": "Can I use a previous STEM degree for the STEM OPT extension?", "label": "factual"}
+{"query": "what is cap gap", "label": "factual"}
+{"query": "Is CPT different from OPT?", "label": "factual"}
+{"query": "How long can I keep working after my EAD expires if my STEM OPT application is pending?", "label": "factual"}
+{"query": "What is Form I-983?", "label": "factual"}
+{"query": "Does pre-completion OPT reduce my post-completion OPT time?", "label": "factual"}
+{"query": "What happens to my OPT if I start a new degree program?", "label": "factual"}
+{"query": "Can I do OPT twice at the same degree level?", "label": "factual"}
+{"query": "whats the filing fee for i-765", "label": "factual"}
+{"query": "Is premium processing available for OPT applications?", "label": "factual"}
+{"query": "What counts as employment for OPT reporting purposes?", "label": "factual"}
+{"query": "Do unemployment days accumulate during the cap-gap period?", "label": "factual"}
+{"query": "What is SEVIS?", "label": "factual"}
+{"query": "Is volunteering allowed as employment during OPT?", "label": "factual"}
+{"query": "How early can USCIS receive my OPT application before my program end date?", "label": "factual"}
+{"query": "What is the deadline to file I-765 after my DSO recommends OPT in SEVIS?", "label": "factual"}
+{"query": "How do I apply for post-completion OPT?", "label": "procedural"}
+{"query": "What are the steps to get a STEM OPT extension?", "label": "procedural"}
+{"query": "How do I report a new employer while on OPT?", "label": "procedural"}
+{"query": "Walk me through filing Form I-765 online.", "label": "procedural"}
+{"query": "How do I get my DSO to recommend OPT in SEVIS?", "label": "procedural"}
+{"query": "What documents do I need to include with my OPT application?", "label": "procedural"}
+{"query": "How do I update my address with SEVP while on OPT?", "label": "procedural"}
+{"query": "how do i withdraw my opt application after filing", "label": "procedural"}
+{"query": "What is the process for completing the I-983 training plan with my employer?", "label": "procedural"}
+{"query": "How do I get an updated I-20 showing my cap-gap extension?", "label": "procedural"}
+{"query": "What steps should I take if my employment ends while on STEM OPT?", "label": "procedural"}
+{"query": "How do I check my OPT application status?", "label": "procedural"}
+{"query": "How do I use the SEVP Portal to report employment?", "label": "procedural"}
+{"query": "What do I do after receiving my EAD card?", "label": "procedural"}
+{"query": "How does my employer report changes to my STEM OPT training plan?", "label": "procedural"}
+{"query": "steps to transition from opt to stem opt", "label": "procedural"}
+{"query": "How do I request premium processing for my I-765?", "label": "procedural"}
+{"query": "What is the procedure if my EAD card has an error on it?", "label": "procedural"}
+{"query": "How do I prove work authorization to my employer during cap-gap?", "label": "procedural"}
+{"query": "In what order should I complete the OPT application steps?", "label": "procedural"}
+{"query": "How do I notify my DSO about a name change during OPT?", "label": "procedural"}
+{"query": "What should I submit to my school before they issue an OPT I-20?", "label": "procedural"}
+{"query": "How does the employer complete their section of Form I-983?", "label": "procedural"}
+{"query": "How do I reapply if my OPT application was rejected for a missing signature?", "label": "procedural"}
+{"query": "What is the process for changing employers during the STEM OPT extension?", "label": "procedural"}
+{"query": "Should I apply for OPT now or wait until closer to graduation?", "label": "advice_seeking"}
+{"query": "Will my OPT application be approved?", "label": "advice_seeking"}
+{"query": "Is it risky to travel outside the US while my STEM OPT application is pending?", "label": "advice_seeking"}
+{"query": "Should I take this contractor job or wait for a full-time offer during OPT?", "label": "advice_seeking"}
+{"query": "What are my chances of getting selected in the H-1B lottery?", "label": "advice_seeking"}
+{"query": "Is my degree STEM enough to qualify? It's in economics with a data science track.", "label": "advice_seeking"}
+{"query": "should i do a second masters if i dont get h1b", "label": "advice_seeking"}
+{"query": "My employer is small and not on E-Verify, should I push them to enroll or find a new job?", "label": "advice_seeking"}
+{"query": "I have 80 unemployment days used, should I be worried?", "label": "advice_seeking"}
+{"query": "Is it better to file my OPT application early or closer to my program end date?", "label": "advice_seeking"}
+{"query": "Do you think my freelance work counts as related to my major?", "label": "advice_seeking"}
+{"query": "Should I mention my pending green card application in my OPT filing?", "label": "advice_seeking"}
+{"query": "My I-765 has been pending 4 months, should I contact USCIS or keep waiting?", "label": "advice_seeking"}
+{"query": "Is working two part-time jobs on OPT a bad idea?", "label": "advice_seeking"}
+{"query": "Would you recommend premium processing in my case?", "label": "advice_seeking"}
+{"query": "My start date is in 3 weeks and I have no EAD yet, what should I do?", "label": "advice_seeking"}
+{"query": "Is it safe to quit my job before finding a new one on STEM OPT?", "label": "advice_seeking"}
+{"query": "Should I trust my employer to file my H-1B or start looking elsewhere?", "label": "advice_seeking"}
+{"query": "am i going to lose my status if my opt gets denied", "label": "advice_seeking"}
+{"query": "Which is better for me, applying for STEM OPT or leaving to work abroad?", "label": "advice_seeking"}
+{"query": "My DSO made a mistake in SEVIS, will this ruin my application?", "label": "advice_seeking"}
+{"query": "Is my situation eligible for cap-gap? My H-1B was filed but I heard nothing back.", "label": "advice_seeking"}
+{"query": "Should I disclose my previous visa denial when applying for OPT?", "label": "advice_seeking"}
+{"query": "How worried should I be about the new immigration policy changes?", "label": "advice_seeking"}
+{"query": "Can you look at my case and tell me if I qualify for the STEM extension?", "label": "advice_seeking"}
+{"query": "What is the capital of France?", "label": "out_of_scope"}
+{"query": "Write me a cover letter for a software engineering job.", "label": "out_of_scope"}
+{"query": "How do I apply for a green card through marriage?", "label": "out_of_scope"}
+{"query": "What are the requirements for a B-2 tourist visa?", "label": "out_of_scope"}
+{"query": "How does the diversity visa lottery work?", "label": "out_of_scope"}
+{"query": "Can my spouse work on an H-4 visa?", "label": "out_of_scope"}
+{"query": "How do I apply for asylum in the United States?", "label": "out_of_scope"}
+{"query": "What is the process for Canadian permanent residency?", "label": "out_of_scope"}
+{"query": "best restaurants in dallas", "label": "out_of_scope"}
+{"query": "How do I file my taxes as an international student?", "label": "out_of_scope"}
+{"query": "Explain how neural networks work.", "label": "out_of_scope"}
+{"query": "What is the weather like tomorrow?", "label": "out_of_scope"}
+{"query": "How do I renew my passport from my home country?", "label": "out_of_scope"}
+{"query": "What are the eligibility rules for the O-1 visa?", "label": "out_of_scope"}
+{"query": "How do I get a driver's license in Texas?", "label": "out_of_scope"}
+{"query": "Tell me a joke.", "label": "out_of_scope"}
+{"query": "What is the L-1 visa transfer process?", "label": "out_of_scope"}
+{"query": "How much does college tuition cost in the US?", "label": "out_of_scope"}
+{"query": "Who won the World Cup?", "label": "out_of_scope"}
+{"query": "How do I open a bank account without an SSN?", "label": "out_of_scope"}
+{"query": "What is the EB-5 investor visa?", "label": "out_of_scope"}
+{"query": "how to get citizenship through naturalization", "label": "out_of_scope"}
+{"query": "Can I sue my landlord for withholding my deposit?", "label": "out_of_scope"}
+{"query": "What jobs are in demand in the US right now?", "label": "out_of_scope"}
+{"query": "Recommend a good immigration lawyer in Dallas.", "label": "out_of_scope"}
+{"query": "What is the TN visa for Mexican citizens?", "label": "out_of_scope"}
