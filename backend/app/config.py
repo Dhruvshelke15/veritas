@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     classifier_model_path: Path = REPO_ROOT / "data" / "classifier" / "model.keras"
     classifier_reject_threshold: float = 0.7
 
+    golden_set_path: Path = REPO_ROOT / "data" / "eval" / "golden_set.jsonl"
+    eval_db_path: Path = REPO_ROOT / "data" / "eval" / "eval_results.db"
+
     allowed_extensions: frozenset[str] = frozenset({".pdf", ".md", ".txt"})
 
 
