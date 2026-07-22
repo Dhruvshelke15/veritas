@@ -1,10 +1,13 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from typing import Callable
 
+from app.classifier.predictor import Classification
 from app.config import settings
 from app.ingestion.indexer import SearchHit, similarity_search
 from app.rag.generator import Generator
 from app.rag.parsing import AnswerParseError, parse_answer, validate_citations
 from app.rag.prompt import SYSTEM_PROMPT, build_user_message
+from app.rag.routing import ADVICE_DISCLAIMER, OUT_OF_SCOPE_ANSWER, RoutingDecision, route
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,11 @@ class AskResult:
     sufficient_context: bool
     hallucinated_citations: list[str] = field(default_factory=list)
     parse_failed: bool = False
+    query_category: str | None = None
+    category_confidence: float | None = None
+    routing_action: str = "standard"
+
+Retriever = Callable[[str, int], list[SearchHit]]
 
 
 NO_RESULTS_ANSWER = "No documents have been ingested yet, or nothing relevant was found. Upload documents and try again."
@@ -47,6 +55,45 @@ def to_citation(hit: SearchHit) -> Citation:
 def ask(query: str, generator: Generator, top_k: int | None = None) -> AskResult:
     hits = similarity_search(query, top_k=top_k or settings.default_top_k)
     return ask_with_hits(query, hits, generator)
+
+
+def default_retriever(query: str, top_k: int) -> list[SearchHit]:
+    return similarity_search(query, top_k=top_k)
+
+
+def ask_routed(
+    query: str,
+    generator: Generator,
+    classification: Classification | None,
+    top_k: int | None = None,
+    retriever: Retriever = default_retriever,
+) -> AskResult:
+    decision: RoutingDecision = route(classification)
+
+    if decision.action == "reject":
+        return AskResult(
+            answer=OUT_OF_SCOPE_ANSWER,
+            citations=[],
+            sufficient_context=False,
+            query_category=decision.category,
+            category_confidence=decision.confidence,
+            routing_action="reject",
+        )
+
+    hits = retriever(query, top_k or settings.default_top_k)
+    result = ask_with_hits(query, hits, generator)
+
+    answer = result.answer
+    if decision.action == "advise" and not result.parse_failed:
+        answer = result.answer + ADVICE_DISCLAIMER
+
+    return replace(
+        result,
+        answer=answer,
+        query_category=decision.category,
+        category_confidence=decision.confidence,
+        routing_action=decision.action,
+    )
 
 
 def ask_with_hits(query: str, hits: list[SearchHit], generator: Generator) -> AskResult:

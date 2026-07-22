@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-haiku-4-5-20251001"
     anthropic_max_tokens: int = 1024
 
+    classifier_model_path: Path = REPO_ROOT / "data" / "classifier" / "model.keras"
+    classifier_reject_threshold: float = 0.7
+
     allowed_extensions: frozenset[str] = frozenset({".pdf", ".md", ".txt"})
 
 

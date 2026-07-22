@@ -8,8 +8,9 @@ from app.config import settings
 from app.ingestion.chunking import chunk_documents, compute_doc_id
 from app.ingestion.indexer import SearchHit, index_chunks, similarity_search
 from app.ingestion.loaders import UnsupportedFileTypeError, load_document
+from app.classifier.predictor import get_classifier
 from app.rag.generator import get_generator
-from app.rag.pipeline import AskResult, ask
+from app.rag.pipeline import AskResult, ask_routed
 
 app = FastAPI(title="Veritas", version="0.1.0")
 
@@ -100,6 +101,9 @@ class AskResponse(BaseModel):
     sufficient_context: bool
     hallucinated_citations: list[str]
     parse_failed: bool
+    query_category: str | None
+    category_confidence: float | None
+    routing_action: str
 
     @classmethod
     def from_result(cls, result: AskResult) -> "AskResponse":
@@ -119,10 +123,20 @@ class AskResponse(BaseModel):
             sufficient_context=result.sufficient_context,
             hallucinated_citations=result.hallucinated_citations,
             parse_failed=result.parse_failed,
+            query_category=result.query_category,
+            category_confidence=result.category_confidence,
+            routing_action=result.routing_action,
         )
 
 
 @app.post("/ask", response_model=AskResponse)
 def ask_endpoint(request: AskRequest) -> AskResponse:
-    result = ask(request.query, generator=get_generator(), top_k=request.top_k)
+    classifier = get_classifier()
+    classification = classifier.classify(request.query) if classifier is not None else None
+    result = ask_routed(
+        request.query,
+        generator=get_generator(),
+        classification=classification,
+        top_k=request.top_k,
+    )
     return AskResponse.from_result(result)
