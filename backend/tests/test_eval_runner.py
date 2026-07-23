@@ -158,4 +158,4 @@ def _fetch_question_row(db_path: Path, question_id: str) -> dict:
     )
     columns = [d[0] for d in cursor.description]
     row = cursor.fetchone()
-    return dict(zip(columns, row))
+    return dict(zip(columns, row, strict=True))

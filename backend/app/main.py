@@ -1,19 +1,19 @@
 import json
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
-from typing import Iterator
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from app.classifier.predictor import get_classifier
 from app.config import settings
 from app.eval import storage as eval_storage
 from app.ingestion.chunking import chunk_documents, compute_doc_id
 from app.ingestion.indexer import DocumentSummary, SearchHit, index_chunks, list_documents, similarity_search
 from app.ingestion.loaders import UnsupportedFileTypeError, load_document
-from app.classifier.predictor import get_classifier
 from app.rag.generator import get_generator
 from app.rag.pipeline import AskResult, ask_routed
 from app.rag.streaming import AnswerDeltaEvent, FinalEvent, MetaEvent, ask_routed_stream

@@ -1,5 +1,6 @@
+from collections.abc import Iterator
 from functools import lru_cache
-from typing import Iterator, Protocol
+from typing import Protocol
 
 from anthropic import Anthropic
 

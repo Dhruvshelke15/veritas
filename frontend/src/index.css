@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  @apply bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200;
+}

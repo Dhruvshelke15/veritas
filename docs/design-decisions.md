@@ -1,0 +1,58 @@
+# Design decisions
+
+This document captures the *why* behind choices that aren't obvious from reading the code — including the ones that turned out to be wrong on the first attempt, and what the eval harness revealed.
+
+## Retrieval
+
+**Chunk size is 800 characters with 150 overlap, not a round token count.** The embedding model (`all-MiniLM-L6-v2`) has a 256-token window. A chunk that overflows that window gets silently truncated at embedding time — the tail of the chunk becomes invisible to search even though it's still returned as "context" to the LLM. 800 characters keeps every chunk inside the window with margin. This is a subtle failure mode most RAG demos have without knowing it, because nothing errors — search just quietly gets worse.
+
+**LangChain only for loading and splitting; retrieval itself is a direct ChromaDB client.** LangChain's retriever abstractions add a layer of indirection that isn't needed for a single-collection, single-embedding-model setup. Using the native client keeps the retrieval path inspectable and keeps one less version-compatibility surface to track.
+
+**Chunk IDs are content-hash-based (`doc_id:chunk_index`), not UUIDs.** Re-ingesting the same file produces the same IDs, so `index_chunks` is an idempotent upsert. This mattered concretely: the corpus and Chroma index were lost between sessions (uncommitted, gitignored) and needed re-ingesting from scratch mid-project — deterministic IDs meant that was a non-event.
+
+**Every chunk carries `source_url` and `retrieved_date` metadata.** Immigration policy changes. An answer that can't tell the user which version of a rule it's citing, and when that version was fetched, is a liability, not a convenience. This is why the citations panel shows "as of \<date\>" rather than just a filename.
+
+## Generation and grounding
+
+**The LLM's output is treated as untrusted input.** Three layers enforce this:
+1. The prompt instructs the model to cite only provided chunk IDs and to set `sufficient_context: false` when the documents don't answer the question.
+2. Parsing is defensive — markdown fences are stripped, the JSON object is located within surrounding prose if needed, every field is type-checked. A malformed response degrades to a clear "unparseable" answer instead of crashing the request.
+3. **Every citation is re-validated server-side** against the set of chunks actually retrieved for that query. Citations to chunk IDs that don't exist in that set are filtered out and reported separately as `hallucinated_citations`. If the model claims `sufficient_context: true` but zero of its citations survive validation, the answer is **forcibly downgraded to a refusal** — the model doesn't get to assert sufficiency without evidence that traces back to a real chunk.
+
+This third layer is the one that actually matters in practice: it's what caught two live routing misclassifications during Stage 3/4 verification (see below) without producing a wrong answer.
+
+## Query classifier
+
+**Categories are `factual` / `procedural` / `advice_seeking` / `out_of_scope`, and routing fails open.** The classifier only short-circuits (skips retrieval and the Claude call entirely) when it predicts `out_of_scope` **and** confidence clears a threshold (0.7). Every other case — including low-confidence out-of-scope — falls through to the normal retrieval-and-generation path, with the citation-validation refusal as the actual safety net.
+
+This was a deliberate bet that paid off: **live verification during Stage 3 found the trained classifier (92.6% held-out accuracy) misclassifying "What is the capital of France?" and "Can my spouse work while I'm on OPT?" as `factual`, not `out_of_scope`.** Because routing fails open, both queries still went through retrieval and generation — and the citation-validation layer above correctly refused both anyway (`sufficient_context: false`, zero citations), because there was nothing in the corpus to ground an answer with. The system produced the right answer despite a wrong classification. A design that routed based on the classifier's decision alone would not have.
+
+**The advice-seeking disclaimer is appended by code, not left to the model.** `ask_routed` appends a fixed disclaimer string to the answer when the classifier says `advice_seeking`, regardless of what the model actually generated. The model is not asked to remember to add it, because it doesn't need to be trusted for something this simple and this important to get right every time.
+
+**Training data was hand-labeled, then expanded with Claude, then human-reviewed before training — not used as generated.** 102 seed queries were hand-labeled, expanded to ~800 with Claude, then reviewed across multiple stratified sampling passes plus a targeted keyword sweep for adjacent-domain leakage (I-539, green card, H-4, TN, EB-*, etc. — topics that use F-1/OPT-adjacent vocabulary but aren't actually in scope). That sweep caught two real mislabels before training: an I-140 filing-cost question labeled `factual`, and a question about STEM OPT gaps "hurting green card prospects" labeled `advice_seeking` — both actually about a different downstream domain than the one this corpus covers.
+
+**The eval harness caught a generalization gap that training accuracy hid.** 92.6% held-out accuracy (on data from the same Claude-generated distribution as the training set) did not transfer to the golden set's naturally-phrased questions: classifier accuracy there was 47% on `factual` and 0% on `out_of_scope`. The dominant failure mode was first-person conditional phrasing ("If I've received...", "Within how many days do I need to...") being over-classified as `advice_seeking` — a pattern the Claude-generated training examples apparently under-represented relative to how the golden set (written to sound like real users) phrases things. This is exactly the kind of gap a same-distribution train/test split cannot surface, and exactly why Stage 4 exists as a separate, independent check rather than trusting the training script's own accuracy number.
+
+## Evaluation harness
+
+**Retrieval hit rate is measured at the source-file level, not exact chunk ID.** Golden questions declare which *documents* should ground the answer, not which specific chunk. Chunk boundaries shift if chunking parameters change; source-file-level scoring stays meaningful across that kind of refactor, while still being a real, falsifiable check (not vacuously true).
+
+**The faithfulness judge scores against the chunks actually cited, not just similarity to a reference answer.** A reference answer is given to the judge for context, but the rubric asks whether every claim in the answer traces back to the cited passages — and treats a correct refusal (when the question is expected to be unanswerable) as fully faithful. This matches what "faithfulness" needs to mean for a system whose core promise is groundedness, not just answer correctness.
+
+**Persistence is plain SQLite via the standard library, no ORM.** Two tables (`eval_runs`, `eval_question_results`), a handful of query helper functions. Consistent with the retrieval layer's own choice to use a native client over an abstraction layer — the schema is small enough that an ORM would add indirection without adding safety.
+
+## Streaming (frontend/backend)
+
+**True token streaming was chosen over client-side animation, and resolved without weakening the validation guarantees above.** The naive version of streaming — piping raw model output straight to the browser — is incompatible with server-side citation validation, because validation can't run until the full JSON object exists. The resolution: a custom incremental JSON-string decoder extracts just the growing `"answer"` field value from the partial response as it streams (handling escape sequences and chunk boundaries that don't align with JSON tokens), so the UI gets a live preview. Once the stream ends, the complete raw text is run through the **exact same, unmodified** `parse_answer` → `validate_citations` → refusal-downgrade pipeline used by the non-streaming `/ask` endpoint. There's one source of truth for what's trustworthy; streaming only changes how quickly the user sees a preview of it.
+
+**The frontend treats the streamed preview as provisional and the final event as authoritative — including showing a visible correction when they differ.** In the common case the two match exactly, because they're derived from the same text. In the refusal-downgrade and parse-failure cases they can differ, and the UI swaps to the validated answer with a small "revised after verification" note rather than silently overwriting what the user was reading. This is the honest way to resolve the streaming-vs-trust tension, not a workaround to hide it.
+
+## Environment
+
+**The backend requires Python 3.12 in a dedicated venv, not the system Python.** TensorFlow has no wheel for Python 3.14 at all, and no `tensorflow-cpu` wheel for macOS under any Python version — only the plain `tensorflow` package works there, and only for a small set of recent Python versions. This was discovered, not designed: the classifier trained successfully but then crashed the running server the moment a trained model existed to load, because the server was running under the same Python that couldn't import TensorFlow at all. See `TESTING.md` for the concrete setup steps and error signatures.
+
+**`.env` is loaded explicitly via `python-dotenv` in `app/config.py`.** `pydantic-settings`'s own `env_file` loading only populates fields declared on the `Settings` model — it does not export values into `os.environ`. The Anthropic SDK reads `ANTHROPIC_API_KEY` straight from `os.environ`, so without an explicit `load_dotenv()` call, a correctly-formatted `.env` file was silently ignored by every Claude API call in the project.
+
+## CI
+
+**The CI pipeline requires zero secrets.** The lint + test + retrieval-hit-rate-gate pipeline that runs on every push needs no API key: retrieval hit rate is a pure embedding-and-ChromaDB check with no LLM call in the loop. This means CI works identically for fork PRs and doesn't need secret management. Faithfulness scoring and classifier accuracy — the two metrics that *do* require live Claude calls — are run manually via `scripts/run_eval.py` (documented in `TESTING.md`) rather than gating every push, both to avoid spending money on every commit and because LLM-judge scores carry enough run-to-run variance that treating them as a hard CI gate would produce flaky builds.

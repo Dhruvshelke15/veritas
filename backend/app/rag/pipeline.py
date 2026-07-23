@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import Callable
 
 from app.classifier.predictor import Classification
 from app.config import settings

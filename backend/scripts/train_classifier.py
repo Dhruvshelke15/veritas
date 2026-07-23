@@ -38,7 +38,7 @@ def stratified_split(
 
 def print_report(y_true: list[int], y_pred: list[int]) -> float:
     matrix = [[0] * len(CATEGORIES) for _ in CATEGORIES]
-    for true, pred in zip(y_true, y_pred):
+    for true, pred in zip(y_true, y_pred, strict=True):
         matrix[true][pred] += 1
 
     print("\nConfusion matrix (rows=true, cols=predicted):")

@@ -1,6 +1,6 @@
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, replace
-from typing import Iterator, Union
 
 from app.classifier.predictor import Classification
 from app.config import settings
@@ -104,7 +104,7 @@ class FinalEvent:
     result: AskResult
 
 
-StreamEvent = Union[MetaEvent, AnswerDeltaEvent, FinalEvent]
+StreamEvent = MetaEvent | AnswerDeltaEvent | FinalEvent
 
 
 def _parse_raw(raw: str, hits: list[SearchHit]) -> AskResult:
