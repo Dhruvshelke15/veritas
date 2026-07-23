@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app import main
 from app.eval import storage as eval_storage
+from app.ingestion.indexer import SearchHit
 
 
 @pytest.fixture()
@@ -64,6 +65,15 @@ class FakeStreamingGenerator:
         yield self.response
 
 
+def make_hit() -> SearchHit:
+    return SearchHit(
+        chunk_id="doc1:0",
+        text="An F-1 student may not accrue more than 90 days of unemployment.",
+        distance=0.2,
+        metadata={"source_file": "policy.md", "doc_id": "doc1", "chunk_index": 0},
+    )
+
+
 def test_ask_stream_emits_meta_deltas_and_final(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -72,6 +82,7 @@ def test_ask_stream_emits_meta_deltas_and_final(
     )
     monkeypatch.setattr(main, "get_classifier", lambda: None)
     monkeypatch.setattr(main, "get_generator", lambda: FakeStreamingGenerator(response_json))
+    monkeypatch.setattr("app.rag.pipeline.similarity_search", lambda query, top_k: [make_hit()])
 
     with client.stream(
         "POST", "/ask/stream", json={"query": "How many days of unemployment are allowed?"}
