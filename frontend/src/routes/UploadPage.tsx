@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { fetchDocuments, uploadDocument } from "../api/client";
 import type { DocumentSummary } from "../api/types";
 import { DocumentList } from "../components/DocumentList";
@@ -7,16 +8,14 @@ import { UploadDropzone } from "../components/UploadDropzone";
 export function UploadPage() {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
       setDocuments(await fetchDocuments());
-      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -28,12 +27,14 @@ export function UploadPage() {
 
   const handleUpload = async (file: File) => {
     setUploading(true);
-    setError(null);
     try {
-      await uploadDocument(file);
+      const result = await uploadDocument(file);
+      toast.success(`${result.filename} ingested`, {
+        description: `${result.chunks_indexed} chunks indexed`,
+      });
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
     }
@@ -51,8 +52,6 @@ export function UploadPage() {
       <div className="mt-6">
         <UploadDropzone onUpload={handleUpload} uploading={uploading} />
       </div>
-
-      {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="mt-10">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">

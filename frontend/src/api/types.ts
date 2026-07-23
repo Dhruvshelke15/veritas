@@ -23,6 +23,12 @@ export type StreamEvent =
   | { type: "answer_delta"; text: string }
   | ({ type: "final" } & AskResult);
 
+export interface IngestResult {
+  doc_id: string;
+  filename: string;
+  chunks_indexed: number;
+}
+
 export interface DocumentSummary {
   doc_id: string;
   source_file: string;

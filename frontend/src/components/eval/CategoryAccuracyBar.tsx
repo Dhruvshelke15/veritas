@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+
 const BAR_FILL = "text-[#2a78d6] dark:text-[#3987e5]";
 const BAR_THICKNESS = 22;
 const SLOT_WIDTH = 76;
@@ -34,23 +36,27 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
           return (
             <g key={category}>
               <title>{`${category}: ${(value * 100).toFixed(0)}%`}</title>
-              <rect
+              <motion.rect
                 x={x}
-                y={y}
                 width={BAR_THICKNESS}
-                height={barHeight}
                 rx={4}
                 className={BAR_FILL}
                 fill="currentColor"
+                initial={{ y: CHART_HEIGHT, height: 0 }}
+                animate={{ y, height: barHeight }}
+                transition={{ duration: 0.5, delay: i * 0.06, ease: "easeOut" }}
               />
-              <text
+              <motion.text
                 x={slotCenter}
                 y={y - 6}
                 textAnchor="middle"
                 className="fill-stone-700 text-[11px] dark:fill-stone-300"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.06 + 0.4, duration: 0.2 }}
               >
                 {(value * 100).toFixed(0)}%
-              </text>
+              </motion.text>
               <text
                 x={slotCenter}
                 y={CHART_HEIGHT + 14}

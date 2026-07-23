@@ -1,5 +1,15 @@
 import { FileText } from "lucide-react";
+import { motion } from "motion/react";
+import { format, parseISO } from "date-fns";
 import type { DocumentSummary } from "../api/types";
+
+function formatDate(value: string): string {
+  try {
+    return format(parseISO(value), "MMM d, yyyy");
+  } catch {
+    return value;
+  }
+}
 
 export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
   if (documents.length === 0) {
@@ -8,9 +18,12 @@ export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      {documents.map((doc) => (
-        <div
+      {documents.map((doc, i) => (
+        <motion.div
           key={doc.doc_id}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: i * 0.05 }}
           className="flex items-start gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 transition-colors hover:border-brand-200 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-700"
         >
           <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-900">
@@ -37,11 +50,11 @@ export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
             )}
             {doc.retrieved_date && (
               <span className="mt-1 inline-block text-xs text-stone-400 dark:text-stone-500">
-                as of {doc.retrieved_date}
+                as of {formatDate(doc.retrieved_date)}
               </span>
             )}
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   );

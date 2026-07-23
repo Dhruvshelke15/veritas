@@ -1,4 +1,4 @@
-import type { DocumentSummary, EvalRunDetail, EvalRunSummary, StreamEvent } from "./types";
+import type { DocumentSummary, EvalRunDetail, EvalRunSummary, IngestResult, StreamEvent } from "./types";
 
 const BASE = "/api";
 
@@ -20,7 +20,7 @@ export async function fetchEvalRunDetail(runId: number): Promise<EvalRunDetail> 
   return res.json();
 }
 
-export async function uploadDocument(file: File, sourceUrl?: string): Promise<void> {
+export async function uploadDocument(file: File, sourceUrl?: string): Promise<IngestResult> {
   const form = new FormData();
   form.append("file", file);
   if (sourceUrl) form.append("source_url", sourceUrl);
@@ -29,6 +29,7 @@ export async function uploadDocument(file: File, sourceUrl?: string): Promise<vo
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail ?? `Upload failed: ${res.status}`);
   }
+  return res.json();
 }
 
 export async function* streamAsk(query: string, topK?: number): AsyncGenerator<StreamEvent> {

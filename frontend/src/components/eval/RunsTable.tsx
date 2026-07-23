@@ -1,4 +1,14 @@
+import clsx from "clsx";
+import { format, parseISO } from "date-fns";
 import type { EvalRunSummary } from "../../api/types";
+
+function formatTimestamp(value: string): string {
+  try {
+    return format(parseISO(value), "MMM d, yyyy · h:mm a");
+  } catch {
+    return value;
+  }
+}
 
 export function RunsTable({
   runs,
@@ -36,12 +46,13 @@ export function RunsTable({
           <tr
             key={run.run_id}
             onClick={() => onSelect(run.run_id)}
-            className={`cursor-pointer border-b border-stone-100 last:border-0 hover:bg-brand-50 dark:border-stone-900 dark:hover:bg-brand-900/30 ${
-              run.run_id === selectedRunId ? "bg-brand-50 dark:bg-brand-900/30" : ""
-            }`}
+            className={clsx(
+              "cursor-pointer border-b border-stone-100 last:border-0 transition-colors duration-200 hover:bg-brand-50 dark:border-stone-900 dark:hover:bg-brand-900/30",
+              run.run_id === selectedRunId && "bg-brand-50 dark:bg-brand-900/30",
+            )}
           >
             <td className="py-2.5 tabular-nums">#{run.run_id}</td>
-            <td className="py-2.5 text-stone-500 dark:text-stone-400">{run.started_at}</td>
+            <td className="py-2.5 text-stone-500 dark:text-stone-400">{formatTimestamp(run.started_at)}</td>
             <td className="py-2.5 tabular-nums">
               {run.retrieval_hit_rate !== null ? `${(run.retrieval_hit_rate * 100).toFixed(0)}%` : "—"}
             </td>

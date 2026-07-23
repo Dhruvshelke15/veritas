@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
+import { motion } from "motion/react";
+import clsx from "clsx";
 
 const ACCEPTED = ".pdf,.md,.txt";
 
@@ -22,7 +24,10 @@ export function UploadDropzone({
   };
 
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.005 }}
+      whileTap={{ scale: 0.995 }}
+      animate={{ scale: isDragging ? 1.01 : 1 }}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -30,11 +35,12 @@ export function UploadDropzone({
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
+      className={clsx(
+        "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors",
         isDragging
           ? "border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/30"
-          : "border-stone-300 hover:border-brand-300 hover:bg-stone-50 dark:border-stone-700 dark:hover:border-brand-600 dark:hover:bg-stone-900"
-      }`}
+          : "border-stone-300 hover:border-brand-300 hover:bg-stone-50 dark:border-stone-700 dark:hover:border-brand-600 dark:hover:bg-stone-900",
+      )}
     >
       <input
         ref={inputRef}
@@ -58,6 +64,6 @@ export function UploadDropzone({
         {uploading ? "Uploading…" : "Drop a document here, or click to browse"}
       </p>
       <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Accepted: {ACCEPTED}</p>
-    </div>
+    </motion.div>
   );
 }

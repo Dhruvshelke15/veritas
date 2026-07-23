@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
 import { fetchEvalRunDetail, fetchEvalRuns } from "../api/client";
 import type { EvalRunDetail, EvalRunSummary } from "../api/types";
 import { StatTile } from "../components/eval/StatTile";
 import { CategoryAccuracyBar } from "../components/eval/CategoryAccuracyBar";
 import { RunsTable } from "../components/eval/RunsTable";
 import { Target, Sparkles } from "lucide-react";
+
+const sectionMotion = (delay: number) => ({
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.3, delay },
+});
 
 export function EvalDashboardPage() {
   const [runs, setRuns] = useState<EvalRunSummary[]>([]);
@@ -56,22 +63,24 @@ export function EvalDashboardPage() {
         <p className="mt-6 text-sm text-stone-500 dark:text-stone-400">Loading…</p>
       ) : (
         <>
-          <div className="mt-6 flex gap-3">
+          <motion.div {...sectionMotion(0)} className="mt-6 flex gap-3">
             <StatTile
               icon={Target}
               label="Retrieval hit rate"
-              value={latest?.retrieval_hit_rate !== null && latest?.retrieval_hit_rate !== undefined ? `${(latest.retrieval_hit_rate * 100).toFixed(0)}%` : "—"}
+              value={latest?.retrieval_hit_rate ?? null}
+              format={(v) => `${Math.round(v * 100)}%`}
               trend={hitRateTrend.length >= 2 ? hitRateTrend : undefined}
             />
             <StatTile
               icon={Sparkles}
               label="Mean faithfulness"
-              value={latest?.mean_faithfulness !== null && latest?.mean_faithfulness !== undefined ? `${latest.mean_faithfulness.toFixed(2)} / 5` : "—"}
+              value={latest?.mean_faithfulness ?? null}
+              format={(v) => `${v.toFixed(2)} / 5`}
               trend={faithfulnessTrend.length >= 2 ? faithfulnessTrend : undefined}
             />
-          </div>
+          </motion.div>
 
-          <div className="mt-8">
+          <motion.div {...sectionMotion(0.08)} className="mt-8">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
               Classifier accuracy by category {detail ? `(run #${detail.run.run_id})` : ""}
             </h2>
@@ -82,16 +91,16 @@ export function EvalDashboardPage() {
                 <p className="text-sm text-stone-500 dark:text-stone-400">No classifier data for this run.</p>
               )}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="mt-8">
+          <motion.div {...sectionMotion(0.16)} className="mt-8">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
               Runs
             </h2>
             <div className="rounded-2xl border border-stone-200 bg-white px-5 py-2 dark:border-stone-800 dark:bg-stone-900">
               <RunsTable runs={runs} selectedRunId={selectedRunId} onSelect={setSelectedRunId} />
             </div>
-          </div>
+          </motion.div>
         </>
       )}
     </div>
