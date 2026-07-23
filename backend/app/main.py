@@ -1,18 +1,31 @@
+import json
 from datetime import date
 from pathlib import Path
+from typing import Iterator
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.eval import storage as eval_storage
 from app.ingestion.chunking import chunk_documents, compute_doc_id
-from app.ingestion.indexer import SearchHit, index_chunks, similarity_search
+from app.ingestion.indexer import DocumentSummary, SearchHit, index_chunks, list_documents, similarity_search
 from app.ingestion.loaders import UnsupportedFileTypeError, load_document
 from app.classifier.predictor import get_classifier
 from app.rag.generator import get_generator
 from app.rag.pipeline import AskResult, ask_routed
+from app.rag.streaming import AnswerDeltaEvent, FinalEvent, MetaEvent, ask_routed_stream
 
 app = FastAPI(title="Veritas", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class IngestResponse(BaseModel):
@@ -140,3 +153,103 @@ def ask_endpoint(request: AskRequest) -> AskResponse:
         top_k=request.top_k,
     )
     return AskResponse.from_result(result)
+
+
+def _sse_event(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+def _stream_events(query: str, top_k: int) -> Iterator[str]:
+    classifier = get_classifier()
+    classification = classifier.classify(query) if classifier is not None else None
+    for event in ask_routed_stream(
+        query, generator=get_generator(), classification=classification, top_k=top_k
+    ):
+        if isinstance(event, MetaEvent):
+            yield _sse_event(
+                {
+                    "type": "meta",
+                    "query_category": event.query_category,
+                    "category_confidence": event.category_confidence,
+                    "routing_action": event.routing_action,
+                }
+            )
+        elif isinstance(event, AnswerDeltaEvent):
+            yield _sse_event({"type": "answer_delta", "text": event.text})
+        elif isinstance(event, FinalEvent):
+            yield _sse_event({"type": "final", **AskResponse.from_result(event.result).model_dump()})
+
+
+@app.post("/ask/stream")
+def ask_stream_endpoint(request: AskRequest) -> StreamingResponse:
+    return StreamingResponse(
+        _stream_events(request.query, request.top_k), media_type="text/event-stream"
+    )
+
+
+class DocumentResponse(BaseModel):
+    doc_id: str
+    source_file: str
+    source_url: str | None
+    retrieved_date: str | None
+    chunk_count: int
+
+    @classmethod
+    def from_summary(cls, summary: DocumentSummary) -> "DocumentResponse":
+        return cls(
+            doc_id=summary.doc_id,
+            source_file=summary.source_file,
+            source_url=summary.source_url,
+            retrieved_date=summary.retrieved_date,
+            chunk_count=summary.chunk_count,
+        )
+
+
+@app.get("/documents", response_model=list[DocumentResponse])
+def documents_endpoint() -> list[DocumentResponse]:
+    return [DocumentResponse.from_summary(d) for d in list_documents()]
+
+
+class EvalRunSummaryResponse(BaseModel):
+    run_id: int
+    started_at: str
+    retrieval_hit_rate: float | None
+    mean_faithfulness: float | None
+    classifier_accuracy: dict[str, float] | None
+
+
+class EvalQuestionResultResponse(BaseModel):
+    question_id: str
+    query: str
+    category: str
+    retrieval_hit: bool | None
+    faithfulness_score: int | None
+    faithfulness_rationale: str | None
+    classifier_predicted: str | None
+    classifier_correct: bool | None
+    sufficient_context: bool
+    routing_action: str
+    answer: str
+
+
+class EvalRunDetailResponse(BaseModel):
+    run: EvalRunSummaryResponse
+    questions: list[EvalQuestionResultResponse]
+
+
+@app.get("/eval/runs", response_model=list[EvalRunSummaryResponse])
+def eval_runs_endpoint() -> list[EvalRunSummaryResponse]:
+    conn = eval_storage.connect(settings.eval_db_path)
+    return [EvalRunSummaryResponse(**row) for row in eval_storage.list_runs(conn)]
+
+
+@app.get("/eval/runs/{run_id}", response_model=EvalRunDetailResponse)
+def eval_run_detail_endpoint(run_id: int) -> EvalRunDetailResponse:
+    conn = eval_storage.connect(settings.eval_db_path)
+    detail = eval_storage.get_run_detail(conn, run_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail=f"No eval run with id {run_id}")
+    return EvalRunDetailResponse(
+        run=EvalRunSummaryResponse(**detail["run"]),
+        questions=[EvalQuestionResultResponse(**q) for q in detail["questions"]],
+    )

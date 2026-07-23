@@ -113,3 +113,56 @@ def finalize_run(
 
 def _to_int_or_none(value: bool | None) -> int | None:
     return None if value is None else int(value)
+
+
+def _row_to_run_summary(row: sqlite3.Row) -> dict:
+    return {
+        "run_id": row["run_id"],
+        "started_at": row["started_at"],
+        "retrieval_hit_rate": row["retrieval_hit_rate"],
+        "mean_faithfulness": row["mean_faithfulness"],
+        "classifier_accuracy": (
+            json.loads(row["classifier_accuracy_json"])
+            if row["classifier_accuracy_json"] is not None
+            else None
+        ),
+    }
+
+
+def list_runs(conn: sqlite3.Connection) -> list[dict]:
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT * FROM eval_runs ORDER BY run_id DESC").fetchall()
+    return [_row_to_run_summary(row) for row in rows]
+
+
+def get_run_detail(conn: sqlite3.Connection, run_id: int) -> dict | None:
+    conn.row_factory = sqlite3.Row
+    run_row = conn.execute(
+        "SELECT * FROM eval_runs WHERE run_id = ?", (run_id,)
+    ).fetchone()
+    if run_row is None:
+        return None
+
+    question_rows = conn.execute(
+        "SELECT * FROM eval_question_results WHERE run_id = ? ORDER BY id", (run_id,)
+    ).fetchall()
+    questions = [
+        {
+            "question_id": row["question_id"],
+            "query": row["query"],
+            "category": row["category"],
+            "retrieval_hit": None if row["retrieval_hit"] is None else bool(row["retrieval_hit"]),
+            "faithfulness_score": row["faithfulness_score"],
+            "faithfulness_rationale": row["faithfulness_rationale"],
+            "classifier_predicted": row["classifier_predicted"],
+            "classifier_correct": (
+                None if row["classifier_correct"] is None else bool(row["classifier_correct"])
+            ),
+            "sufficient_context": bool(row["sufficient_context"]),
+            "routing_action": row["routing_action"],
+            "answer": row["answer"],
+        }
+        for row in question_rows
+    ]
+
+    return {"run": _row_to_run_summary(run_row), "questions": questions}

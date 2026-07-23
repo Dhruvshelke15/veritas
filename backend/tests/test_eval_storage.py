@@ -88,3 +88,47 @@ def test_multiple_runs_are_independent(tmp_path: Path) -> None:
 
     count = conn.execute("SELECT COUNT(*) FROM eval_question_results").fetchone()[0]
     assert count == 2
+
+
+def test_list_runs_returns_newest_first_with_parsed_accuracy(tmp_path: Path) -> None:
+    conn = storage.connect(tmp_path / "eval.db")
+    run_1 = storage.create_run(conn, "2026-07-22T00:00:00+00:00")
+    run_2 = storage.create_run(conn, "2026-07-22T01:00:00+00:00")
+    storage.finalize_run(conn, run_1, 0.8, 4.0, {"factual": 1.0})
+    storage.finalize_run(conn, run_2, 0.9, 4.5, {"factual": 0.5})
+
+    runs = storage.list_runs(conn)
+
+    assert [r["run_id"] for r in runs] == [run_2, run_1]
+    assert runs[0]["classifier_accuracy"] == {"factual": 0.5}
+    assert runs[1]["retrieval_hit_rate"] == 0.8
+
+
+def test_list_runs_handles_null_classifier_accuracy(tmp_path: Path) -> None:
+    conn = storage.connect(tmp_path / "eval.db")
+    run_id = storage.create_run(conn, "2026-07-22T00:00:00+00:00")
+    storage.finalize_run(conn, run_id, 1.0, 5.0, None)
+
+    runs = storage.list_runs(conn)
+    assert runs[0]["classifier_accuracy"] is None
+
+
+def test_get_run_detail_returns_run_and_questions(tmp_path: Path) -> None:
+    conn = storage.connect(tmp_path / "eval.db")
+    run_id = storage.create_run(conn, "2026-07-22T00:00:00+00:00")
+    storage.save_question_result(conn, run_id, make_row("q1"))
+    storage.finalize_run(conn, run_id, 1.0, 5.0, {"factual": 1.0})
+
+    detail = storage.get_run_detail(conn, run_id)
+
+    assert detail is not None
+    assert detail["run"]["run_id"] == run_id
+    assert len(detail["questions"]) == 1
+    assert detail["questions"][0]["question_id"] == "q1"
+    assert detail["questions"][0]["retrieval_hit"] is True
+    assert detail["questions"][0]["sufficient_context"] is True
+
+
+def test_get_run_detail_returns_none_for_missing_run(tmp_path: Path) -> None:
+    conn = storage.connect(tmp_path / "eval.db")
+    assert storage.get_run_detail(conn, 999) is None

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 
 import chromadb
@@ -15,6 +15,15 @@ class SearchHit:
     text: str
     distance: float
     metadata: dict[str, str | int]
+
+
+@dataclass(frozen=True)
+class DocumentSummary:
+    doc_id: str
+    source_file: str
+    source_url: str | None
+    retrieved_date: str | None
+    chunk_count: int
 
 
 @lru_cache(maxsize=1)
@@ -59,3 +68,28 @@ def similarity_search(query: str, top_k: int | None = None) -> list[SearchHit]:
         )
         for i in range(len(ids))
     ]
+
+
+def list_documents() -> list[DocumentSummary]:
+    collection = get_collection()
+    result = collection.get(include=["metadatas"])
+    metadatas = result.get("metadatas") or []
+
+    by_doc_id: dict[str, DocumentSummary] = {}
+    for metadata in metadatas:
+        doc_id = str(metadata.get("doc_id", "unknown"))
+        existing = by_doc_id.get(doc_id)
+        if existing is None:
+            source_url = metadata.get("source_url")
+            retrieved_date = metadata.get("retrieved_date")
+            by_doc_id[doc_id] = DocumentSummary(
+                doc_id=doc_id,
+                source_file=str(metadata.get("source_file", "unknown")),
+                source_url=str(source_url) if source_url is not None else None,
+                retrieved_date=str(retrieved_date) if retrieved_date is not None else None,
+                chunk_count=1,
+            )
+        else:
+            by_doc_id[doc_id] = replace(existing, chunk_count=existing.chunk_count + 1)
+
+    return sorted(by_doc_id.values(), key=lambda d: d.source_file)
