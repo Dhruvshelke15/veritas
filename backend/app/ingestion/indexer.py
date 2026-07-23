@@ -1,5 +1,5 @@
+import threading
 from dataclasses import dataclass, replace
-from functools import lru_cache
 
 import chromadb
 from chromadb.api.models.Collection import Collection
@@ -26,15 +26,29 @@ class DocumentSummary:
     chunk_count: int
 
 
-@lru_cache(maxsize=1)
+_collection: Collection | None = None
+_collection_lock = threading.Lock()
+
+
 def get_collection() -> Collection:
-    client = chromadb.PersistentClient(path=str(settings.chroma_dir))
-    embedding_fn = SentenceTransformerEmbeddingFunction(model_name=settings.embedding_model)
-    return client.get_or_create_collection(
-        name=settings.collection_name,
-        embedding_function=embedding_fn,
-        metadata={"hnsw:space": "cosine"},
-    )
+    # Double-checked locking: chromadb's PersistentClient registry isn't safe
+    # against concurrent first-time creation for the same path (FastAPI runs
+    # sync endpoints in a thread pool, and React StrictMode's double
+    # effect-invocation in dev is enough to trigger two simultaneous
+    # cold-start calls here). A plain @lru_cache doesn't help -- it only
+    # dedupes completed results, not concurrent in-flight calls.
+    global _collection
+    if _collection is None:
+        with _collection_lock:
+            if _collection is None:
+                client = chromadb.PersistentClient(path=str(settings.chroma_dir))
+                embedding_fn = SentenceTransformerEmbeddingFunction(model_name=settings.embedding_model)
+                _collection = client.get_or_create_collection(
+                    name=settings.collection_name,
+                    embedding_function=embedding_fn,
+                    metadata={"hnsw:space": "cosine"},
+                )
+    return _collection
 
 
 def index_chunks(chunks: list[Chunk]) -> int:

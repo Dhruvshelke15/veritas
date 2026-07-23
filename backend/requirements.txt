@@ -11,6 +11,8 @@ sentence-transformers==5.6.0
 pytest==9.1.1
 httpx==0.28.1
 anthropic==0.116.0
+# TensorFlow has no wheel for Python 3.14 (any platform) and no tensorflow-cpu
+# wheel for macOS at all. Install into a Python 3.12 venv: see TESTING.md.
 tensorflow-cpu==2.21.0; sys_platform != "darwin"
 tensorflow==2.21.0; sys_platform == "darwin"
 python-dotenv==1.2.2

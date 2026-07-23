@@ -1,46 +1,52 @@
+import { AlertTriangle, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
 import type { ChatTurn } from "../hooks/useChatStream";
 import { CitationsPanel } from "./CitationsPanel";
 
-const ROUTING_LABEL: Record<string, string> = {
-  reject: "Out of scope",
-  advise: "Advice-seeking",
-  standard: "Standard",
+const ROUTING_META: Record<string, { label: string; icon: typeof ShieldAlert }> = {
+  reject: { label: "Out of scope", icon: ShieldAlert },
+  advise: { label: "Advice-seeking", icon: Sparkles },
 };
 
 export function ChatMessage({ turn }: { turn: ChatTurn }) {
+  const routing = turn.routingAction ? ROUTING_META[turn.routingAction] : undefined;
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="self-end rounded-2xl rounded-br-sm bg-slate-900 px-4 py-2 text-white dark:bg-slate-100 dark:text-slate-900">
+      <div className="self-end rounded-2xl rounded-br-md bg-brand-700 px-4 py-2.5 text-white shadow-sm dark:bg-brand-600">
         {turn.query}
       </div>
 
-      <div className="self-start max-w-2xl rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-        {turn.routingAction && turn.routingAction !== "standard" && (
-          <span className="mb-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-            {ROUTING_LABEL[turn.routingAction] ?? turn.routingAction}
+      <div className="max-w-2xl self-start rounded-2xl rounded-bl-md border border-stone-200 bg-white px-4 py-3.5 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+        {routing && (
+          <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-accent-500/15 px-2.5 py-1 text-xs font-medium text-accent-600 dark:text-accent-400">
+            <routing.icon className="h-3.5 w-3.5" strokeWidth={2} />
+            {routing.label}
           </span>
         )}
 
-        <p className="whitespace-pre-wrap text-slate-800 dark:text-slate-200">
-          {turn.displayedText || (turn.status === "streaming" ? "…" : "")}
+        <p className="whitespace-pre-wrap leading-relaxed text-stone-800 dark:text-stone-200">
+          {turn.displayedText}
+          {turn.status === "streaming" && (
+            <span className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-accent-500" aria-hidden />
+          )}
         </p>
 
-        {turn.status === "streaming" && (
-          <span className="mt-1 inline-block h-4 w-1.5 animate-pulse bg-slate-400" aria-hidden />
-        )}
-
         {turn.status === "error" && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">Error: {turn.error}</p>
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-4 w-4" strokeWidth={2} />
+            Error: {turn.error}
+          </p>
         )}
 
         {turn.reconciled && (
-          <p className="mt-2 text-xs italic text-slate-500 dark:text-slate-400">
+          <p className="mt-2.5 flex items-center gap-1.5 text-xs italic text-stone-500 dark:text-stone-400">
+            <RotateCcw className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             Answer revised after citation verification.
           </p>
         )}
 
         {turn.final && !turn.final.sufficient_context && turn.final.citations.length === 0 && (
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-2.5 text-xs text-stone-500 dark:text-stone-400">
             The documents don't provide enough grounded information to answer confidently.
           </p>
         )}

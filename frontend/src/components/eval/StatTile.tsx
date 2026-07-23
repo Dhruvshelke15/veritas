@@ -1,5 +1,7 @@
+import type { LucideIcon } from "lucide-react";
+
 const ACCENT = "text-[#2a78d6] dark:text-[#3987e5]";
-const DE_EMPHASIS = "text-slate-300 dark:text-slate-700";
+const DE_EMPHASIS = "text-stone-300 dark:text-stone-700";
 
 function sparklinePoints(values: number[], width: number, height: number): [number, number][] {
   const min = Math.min(...values);
@@ -10,10 +12,12 @@ function sparklinePoints(values: number[], width: number, height: number): [numb
 }
 
 export function StatTile({
+  icon: Icon,
   label,
   value,
   trend,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string;
   trend?: number[];
@@ -26,12 +30,13 @@ export function StatTile({
   const last = points[points.length - 1];
 
   return (
-    <div className="flex flex-1 flex-col gap-2 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-800">
-      <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+    <div className="flex flex-1 flex-col gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 dark:border-stone-800 dark:bg-stone-900">
+      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+        <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
         {label}
       </span>
       <div className="flex items-end justify-between gap-3">
-        <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{value}</span>
+        <span className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{value}</span>
         {hasTrend && (
           <svg width={width} height={height} aria-hidden>
             <path

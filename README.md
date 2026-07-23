@@ -70,7 +70,7 @@ npm install
 Then, in two terminals:
 
 ```bash
-cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000
+cd backend && ./run.sh
 cd frontend && npm run dev
 ```
 

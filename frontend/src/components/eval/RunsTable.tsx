@@ -11,8 +11,12 @@ export function RunsTable({
 }) {
   if (runs.length === 0) {
     return (
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        No eval runs yet. Run <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">python scripts/run_eval.py</code> against the backend.
+      <p className="py-3 text-sm text-stone-500 dark:text-stone-400">
+        No eval runs yet. Run{" "}
+        <code className="rounded bg-stone-100 px-1.5 py-0.5 text-xs dark:bg-stone-800">
+          python scripts/run_eval.py
+        </code>{" "}
+        against the backend.
       </p>
     );
   }
@@ -20,11 +24,11 @@ export function RunsTable({
   return (
     <table className="w-full text-left text-sm">
       <thead>
-        <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
-          <th className="py-2 font-medium">Run</th>
-          <th className="py-2 font-medium">Started</th>
-          <th className="py-2 font-medium">Hit rate</th>
-          <th className="py-2 font-medium">Faithfulness</th>
+        <tr className="border-b border-stone-200 text-xs uppercase tracking-wide text-stone-500 dark:border-stone-800 dark:text-stone-400">
+          <th className="py-2.5 font-medium">Run</th>
+          <th className="py-2.5 font-medium">Started</th>
+          <th className="py-2.5 font-medium">Hit rate</th>
+          <th className="py-2.5 font-medium">Faithfulness</th>
         </tr>
       </thead>
       <tbody>
@@ -32,16 +36,16 @@ export function RunsTable({
           <tr
             key={run.run_id}
             onClick={() => onSelect(run.run_id)}
-            className={`cursor-pointer border-b border-slate-100 hover:bg-slate-50 dark:border-slate-900 dark:hover:bg-slate-900 ${
-              run.run_id === selectedRunId ? "bg-slate-50 dark:bg-slate-900" : ""
+            className={`cursor-pointer border-b border-stone-100 last:border-0 hover:bg-brand-50 dark:border-stone-900 dark:hover:bg-brand-900/30 ${
+              run.run_id === selectedRunId ? "bg-brand-50 dark:bg-brand-900/30" : ""
             }`}
           >
-            <td className="py-2 tabular-nums">#{run.run_id}</td>
-            <td className="py-2 text-slate-500 dark:text-slate-400">{run.started_at}</td>
-            <td className="py-2 tabular-nums">
+            <td className="py-2.5 tabular-nums">#{run.run_id}</td>
+            <td className="py-2.5 text-stone-500 dark:text-stone-400">{run.started_at}</td>
+            <td className="py-2.5 tabular-nums">
               {run.retrieval_hit_rate !== null ? `${(run.retrieval_hit_rate * 100).toFixed(0)}%` : "—"}
             </td>
-            <td className="py-2 tabular-nums">
+            <td className="py-2.5 tabular-nums">
               {run.mean_faithfulness !== null ? `${run.mean_faithfulness.toFixed(2)} / 5` : "—"}
             </td>
           </tr>

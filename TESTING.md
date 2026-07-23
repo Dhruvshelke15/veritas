@@ -124,7 +124,7 @@ for q in storage.get_run_detail(conn, run_id)['questions']:
 
 ```bash
 # terminal 1
-cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000
+cd backend && ./run.sh   # wraps `.venv/bin/python -m uvicorn app.main:app --port 8000`
 
 # terminal 2
 cd frontend && npm run dev
@@ -140,7 +140,8 @@ Open http://localhost:5173 and check:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `ModuleNotFoundError: No module named 'tensorflow'` | Running on the system Python instead of `backend/.venv` | Use `.venv/bin/python`, not `python3` |
+| `ModuleNotFoundError: No module named 'tensorflow'` | Running on the system Python instead of `backend/.venv` (`python3 -m uvicorn ...` resolves to the global Python) | Use `.venv/bin/python`, not `python3` — or just run `./run.sh` to start the server, which always uses the venv |
+| `ERROR: Could not find a version that satisfies the requirement tensorflow==2.21.0` during `pip install` | Same root cause as above, but at install time: bare `pip install -r requirements.txt` resolved to the global Python (macOS `sys_platform == "darwin"` picks the plain `tensorflow` line, which has no wheel outside a narrow set of Python versions) | Use `.venv/bin/pip install -r requirements.txt`, not bare `pip`/`pip3` |
 | `Could not resolve authentication method` | `ANTHROPIC_API_KEY` not in `backend/.env`, or `.env` sitting in the wrong directory | Key must be in `backend/.env` specifically (not repo root) |
 | `/ask/stream` hangs or errors in the browser but `curl` to `/health` works | A stale `uvicorn` process from an earlier run is still holding port 8000, possibly started under the wrong Python | `lsof -ti:8000 -sTCP:LISTEN \| xargs kill -9`, then restart |
 | Classifier confidently mislabels an obviously in-scope or out-of-scope question | Known distribution-shift gap between Claude-generated training phrasing and natural human phrasing (see `data/eval/eval_results.db`) | Not a bug to "fix" blindly — the RAG-layer refusal backstop is the actual safety net; verify the *answer* is still correct via step 4/5 rather than the classifier label alone |

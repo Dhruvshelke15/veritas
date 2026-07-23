@@ -6,7 +6,7 @@ const CHART_HEIGHT = 120;
 export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, number> }) {
   const categories = Object.entries(accuracy).sort(([a], [b]) => a.localeCompare(b));
   if (categories.length === 0) {
-    return <p className="text-sm text-slate-500 dark:text-slate-400">No classifier data yet.</p>;
+    return <p className="text-sm text-stone-500 dark:text-stone-400">No classifier data yet.</p>;
   }
 
   const width = categories.length * SLOT_WIDTH;
@@ -20,7 +20,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
           x2={width}
           y2={CHART_HEIGHT}
           stroke="currentColor"
-          className="text-slate-300 dark:text-slate-700"
+          className="text-stone-300 dark:text-stone-700"
           strokeWidth={1}
         />
         {categories.map(([category, value], i) => {
@@ -47,7 +47,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
                 x={slotCenter}
                 y={y - 6}
                 textAnchor="middle"
-                className="fill-slate-700 text-[11px] dark:fill-slate-300"
+                className="fill-stone-700 text-[11px] dark:fill-stone-300"
               >
                 {(value * 100).toFixed(0)}%
               </text>
@@ -55,7 +55,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
                 x={slotCenter}
                 y={CHART_HEIGHT + 14}
                 textAnchor="middle"
-                className="fill-slate-500 text-[10px] dark:fill-slate-400"
+                className="fill-stone-500 text-[10px] dark:fill-stone-400"
               >
                 {labelLines.map((line, li) => (
                   <tspan key={li} x={slotCenter} dy={li === 0 ? 0 : 12}>

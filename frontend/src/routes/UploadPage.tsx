@@ -40,9 +40,11 @@ export function UploadPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Documents</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="font-display text-2xl font-medium text-stone-900 dark:text-stone-100">
+        Documents
+      </h1>
+      <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400">
         Upload source documents (.pdf, .md, .txt) to ground answers in.
       </p>
 
@@ -52,12 +54,12 @@ export function UploadPage() {
 
       {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="mt-8">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <div className="mt-10">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
           Ingested documents
         </h2>
         {loading ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>
         ) : (
           <DocumentList documents={documents} />
         )}
