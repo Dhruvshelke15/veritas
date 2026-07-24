@@ -9,7 +9,12 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Set manually per-deployment (your Vercel URL) — sync: false means
+      # blueprint syncs won't overwrite whatever you set in the dashboard.
+      # Without this, every push resets it to the placeholder below and
+      # silently breaks CORS against your real frontend.
       - key: VERITAS_ALLOWED_ORIGINS
+        sync: false
         value: http://localhost:5173
       # TensorFlow (classifier) + PyTorch (embeddings) both resident at once
       # OOMs the free instance type. Routing already fails open without a

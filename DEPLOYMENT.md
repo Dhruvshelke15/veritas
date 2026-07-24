@@ -35,6 +35,8 @@ VERITAS_ALLOWED_ORIGINS=https://<your-vercel-app>.vercel.app
 
 (Include `http://localhost:5173` too, comma-separated, if you still want local dev to hit the deployed backend.) Redeploy the backend for the change to take effect.
 
+`render.yaml` marks this variable `sync: false`, meaning the dashboard value you set here is authoritative and future blueprint syncs (i.e. every push) won't reset it back to the placeholder in the file. If you ever see a real CORS error again after this has already worked once, check the dashboard value first — it's more likely to have been reset than to be a new bug.
+
 ## 4. Verify
 
 Open the Vercel URL and repeat the same three checks from [TESTING.md](TESTING.md)'s browser section: ask a real question and confirm it streams and cites sources, ask an out-of-scope question and confirm it refuses, and check `/upload` and `/eval` load without console errors. A browser CORS error in the console almost always means step 3 wasn't done yet or the backend hasn't redeployed since.
@@ -70,6 +72,7 @@ rm ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
 | Symptom | Cause | Fix |
 |---|---|---|
 | Browser console: CORS error on every `/api/*` request | `VERITAS_ALLOWED_ORIGINS` on Render doesn't include the Vercel origin | Set it (step 3) and redeploy the backend |
+| CORS error comes back after previously working | Before this was marked `sync: false`, every blueprint sync (i.e. every push) reset `VERITAS_ALLOWED_ORIGINS` back to the `render.yaml` placeholder, silently wiping your dashboard override | Re-set it on the dashboard once more — it should stick now |
 | Frontend requests go to `localhost:8000` / relative `/api` 404s in production | `VITE_API_BASE_URL` wasn't set before the Vercel build | Set the env var in Vercel project settings and trigger a new deploy (it's baked in at build time, not read at runtime) |
 | Render build fails installing `tensorflow`/`torch` | Same root cause as the local `.venv` gotcha in TESTING.md — these are large, platform-specific wheels | Check the build log for the actual pip error; Render's Docker builds run linux/amd64 by default, which the pinned `tensorflow-cpu` wheel supports |
 | Backend crash-loops shortly after boot | Likely OOM on Render's free instance (TF + PyTorch + Chroma in memory at once) | Upgrade to a paid instance type with more RAM |
