@@ -99,3 +99,35 @@ def test_ask_stream_emits_meta_deltas_and_final(
     assert types[-1] == "final"
     final = events[-1]
     assert final["answer"] == "Up to 90 days."
+
+
+class FailingStreamingGenerator:
+    def generate_stream(self, system: str, user_message: str):
+        raise RuntimeError("simulated Claude API failure")
+        yield  # pragma: no cover - unreachable, makes this a generator
+
+
+def test_ask_stream_generation_failure_yields_final_error_event(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(main, "get_classifier", lambda: None)
+    monkeypatch.setattr(main, "get_generator", lambda: FailingStreamingGenerator())
+    monkeypatch.setattr("app.rag.pipeline.similarity_search", lambda query, top_k: [make_hit()])
+
+    with client.stream(
+        "POST", "/ask/stream", json={"query": "How many days of unemployment are allowed?"}
+    ) as response:
+        assert response.status_code == 200
+        events = [
+            json.loads(line[len("data: ") :])
+            for line in response.iter_lines()
+            if line.startswith("data: ")
+        ]
+
+    types = [e["type"] for e in events]
+    assert types[0] == "meta"
+    assert types[-1] == "final"
+    final = events[-1]
+    assert final["citations"] == []
+    assert final["sufficient_context"] is False
+    assert "went wrong" in final["answer"].lower()
