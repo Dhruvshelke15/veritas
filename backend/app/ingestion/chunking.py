@@ -1,10 +1,13 @@
 import hashlib
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import settings
+
+if TYPE_CHECKING:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 SEPARATORS: list[str] = ["\n\n", "\n", ". ", " ", ""]
 
@@ -20,7 +23,14 @@ def compute_doc_id(file_bytes: bytes) -> str:
     return hashlib.sha256(file_bytes).hexdigest()[:12]
 
 
-def build_splitter() -> RecursiveCharacterTextSplitter:
+def build_splitter() -> "RecursiveCharacterTextSplitter":
+    # langchain_text_splitters' __init__.py eagerly imports every splitter it
+    # ships, including SentenceTransformersTokenTextSplitter — which pulls in
+    # the full torch/transformers stack even though only the plain character
+    # splitter below is used. Deferred here so `import app.main` (and hence
+    # server startup) stays fast; this is only paid on an actual ingest call.
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
     return RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
