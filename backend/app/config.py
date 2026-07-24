@@ -34,5 +34,9 @@ class Settings(BaseSettings):
 
     allowed_extensions: frozenset[str] = frozenset({".pdf", ".md", ".txt"})
 
+    # Comma-separated list of allowed frontend origins for CORS. Defaults to
+    # the Vite dev server; set to the deployed frontend's URL in production.
+    allowed_origins: str = "http://localhost:5173"
+
 
 settings = Settings()

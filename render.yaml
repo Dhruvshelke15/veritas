@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: veritas-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VERITAS_ALLOWED_ORIGINS
+        value: http://localhost:5173

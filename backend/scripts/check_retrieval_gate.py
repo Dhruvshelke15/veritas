@@ -1,33 +1,16 @@
 import argparse
-import json
 import sys
-from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from ingest_corpus import ingest_corpus
 
 from app.config import settings
 from app.eval.golden import load_golden_set
 from app.eval.retrieval import hit_rate, retrieval_hit
-from app.ingestion.chunking import chunk_documents, compute_doc_id
-from app.ingestion.indexer import index_chunks, similarity_search
-from app.ingestion.loaders import load_document
-
-
-def ingest_corpus() -> None:
-    manifest = json.loads((settings.golden_set_path.parent.parent / "corpus" / "manifest.json").read_text())
-    corpus_dir = settings.golden_set_path.parent.parent / "corpus"
-    for doc in manifest["documents"]:
-        filename = doc["filename"]
-        if not filename.endswith(".md"):
-            continue
-        path = corpus_dir / filename
-        doc_id = compute_doc_id(path.read_bytes())
-        docs = load_document(path)
-        chunks = chunk_documents(
-            docs, doc_id, source_url=doc["source_url"], retrieved_date=date.today().isoformat()
-        )
-        index_chunks(chunks)
+from app.ingestion.indexer import similarity_search
 
 
 def main() -> None:

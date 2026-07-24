@@ -80,7 +80,7 @@ cd backend && ./run.sh
 cd frontend && npm run dev
 ```
 
-Open `http://localhost:5173`. Full verification steps (tests, lint, live routing checks, eval harness) are in **[TESTING.md](TESTING.md)**.
+Open `http://localhost:5173`. Full verification steps (tests, lint, live routing checks, eval harness) are in **[TESTING.md](TESTING.md)**. To put it on the public internet (Render + Vercel), see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ## Project structure
 

@@ -22,7 +22,7 @@ app = FastAPI(title="Veritas", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )

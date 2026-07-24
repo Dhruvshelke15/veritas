@@ -1,6 +1,10 @@
 import type { DocumentSummary, EvalRunDetail, EvalRunSummary, IngestResult, StreamEvent } from "./types";
 
-const BASE = "/api";
+// In dev, Vite proxies "/api" to the local backend (see vite.config.ts). In
+// production the frontend and backend are deployed separately, so this must
+// point at the deployed backend's absolute URL — set via VITE_API_BASE_URL
+// at build time (see DEPLOYMENT.md).
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export async function fetchDocuments(): Promise<DocumentSummary[]> {
   const res = await fetch(`${BASE}/documents`);
