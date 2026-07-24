@@ -1,0 +1,63 @@
+name: USCIS Watch
+
+on:
+  schedule:
+    - cron: "0 13 * * 1" # Monday 13:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scan USCIS for updates
+        id: scan
+        run: |
+          set -o pipefail
+          python scripts/watch_uscis.py --json | tee /tmp/watch_result.json
+
+      - name: Commit updated watch state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- ../data/watch/seen.json; then
+            git add ../data/watch/seen.json
+            git commit -m "chore: update USCIS watch state [skip ci]"
+            git push
+          else
+            echo "No state changes to commit."
+          fi
+
+      - name: Open an issue if new relevant updates were found
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(jq 'length' /tmp/watch_result.json)
+          if [ "$count" -gt 0 ]; then
+            jq -r '.[] | "- **[\(.title)](\(.url))**\n  - source: `\(.source)` | published: \(.published // "unknown") | score: \(.score)\n  - matched: \(.matched_keywords | join(", "))\n"' \
+              /tmp/watch_result.json > /tmp/watch_result.md
+            gh issue create \
+              --title "USCIS watch: $count new update(s) found" \
+              --body-file /tmp/watch_result.md \
+              --label "uscis-watch" || echo "Issue creation failed (label may not exist yet) — see job logs above for the findings."
+          else
+            echo "No new relevant updates found."
+          fi

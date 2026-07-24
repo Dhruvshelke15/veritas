@@ -136,6 +136,21 @@ Open http://localhost:5173 and check:
 - **Documents** (`/upload`) — the 5 ingested corpus docs are listed with source URLs and chunk counts. Try dropping a `.md`/`.txt`/`.pdf` file and confirm it appears after upload.
 - **Evaluation** (`/eval`) — after running step 5 at least once, confirm the stat tiles, category-accuracy bar chart, and runs table populate with real numbers.
 
+## 7. USCIS watch job (no API key needed)
+
+Unit tests (`tests/test_watch.py`) run entirely against local HTML fixtures — no network access required — and are covered by step 1. To test it against the live USCIS site instead:
+
+```bash
+cd backend
+.venv/bin/python scripts/watch_uscis.py --since-days 180
+```
+
+`--since-days 180` matters on a first run: `data/watch/seen.json` starts empty, so without it every relevant item ever posted would be reported as "new." Add `--json` for machine-readable output, or `--no-save-state` to do a dry run without updating `data/watch/seen.json`.
+
+USCIS blocks requests that don't look like a browser. This should work from a normal residential connection; if it comes back empty or errors, the request may have been blocked rather than there being nothing posted — see the "silence is treated as failure" note in the README. It has **not** been verified against the live page from this environment (network access here is itself often blocked by the same bot detection), so treat the parser as tested-against-realistic-fixtures rather than confirmed-against-production markup until you've run it once yourself.
+
+The scheduled job (`.github/workflows/uscis-watch.yml`, weekly) runs this same script, commits the updated `data/watch/seen.json` back to `main`, and opens a GitHub issue listing anything new — it does not auto-ingest. GitHub Actions runners are datacenter IPs, which is exactly the kind of traffic USCIS's bot detection targets, so there's a real chance the scheduled run gets blocked even though it works locally. Trigger it once manually (`workflow_dispatch`, or `gh workflow run uscis-watch.yml`) after pushing to see which way it goes.
+
 ## Known gotchas
 
 | Symptom | Cause | Fix |

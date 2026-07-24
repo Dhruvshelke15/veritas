@@ -43,6 +43,12 @@ flowchart TB
     end
 ```
 
+## Keeping the corpus current
+
+USCIS doesn't publish an RSS feed for policy changes — only email subscriptions (GovDelivery) and searchable listing pages. So instead of subscribing to a feed, `scripts/watch_uscis.py` polls two official listing pages weekly (Policy Manual updates, newsroom alerts), parses new entries by **URL pattern** rather than CSS selectors (update PDFs encode their date in the filename, which survives markup redesigns), scores them against F-1/OPT/STEM/cap-gap keywords, and flags genuinely new, relevant items — deduped against `data/watch/seen.json` so the same item isn't reported twice. It does not auto-ingest anything; a human reviews and decides what belongs in the corpus. See `.github/workflows/uscis-watch.yml` and `backend/app/watch/`.
+
+A source that parses to zero items is treated as a failure, not "no updates" — that distinction matters because USCIS blocks bot-like traffic, and a monitor that silently reports "nothing found" when it was actually blocked is worse than no monitor.
+
 ## Stack
 
 | Layer | Choice | Why |
@@ -85,8 +91,9 @@ backend/
     classifier/   # TF/Keras query classifier: dataset, model, predictor
     rag/          # prompt, generator, streaming decoder, pipeline, routing
     eval/         # golden set, retrieval/faithfulness metrics, SQLite storage, runner
+    watch/        # USCIS update discovery: parsers, keyword scoring, state, scan orchestration
     main.py       # FastAPI routes
-  scripts/        # CLI: ingest, train classifier, expand dataset, run eval
+  scripts/        # CLI: ingest, train classifier, expand dataset, run eval, watch_uscis
   tests/
 frontend/
   src/
@@ -98,8 +105,9 @@ data/
   corpus/         # source documents + manifest
   classifier/     # seed/expanded training data, trained model
   eval/           # golden_set.jsonl, eval_results.db (generated)
+  watch/          # seen.json — dedup state for the USCIS watch job
 ```
 
 ## Status
 
-All 6 planned stages are complete: ingestion, generation with grounding, the query classifier (trained, 92.6% held-out accuracy), the evaluation harness (100% retrieval hit rate, 4.64/5 mean faithfulness on the golden set), the frontend, and this CI/docs stage. See **[docs/design-decisions.md](docs/design-decisions.md)** for the reasoning behind the non-obvious choices.
+All 6 planned stages are complete: ingestion, generation with grounding, the query classifier (trained, 92.6% held-out accuracy), the evaluation harness (100% retrieval hit rate, 4.64/5 mean faithfulness on the golden set), the frontend, and CI/docs. On top of that, a weekly USCIS watch job (`app/watch/`) discovers new F-1/OPT-relevant guidance so the corpus doesn't silently go stale. See **[docs/design-decisions.md](docs/design-decisions.md)** for the reasoning behind the non-obvious choices.
