@@ -1,5 +1,6 @@
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -45,6 +46,26 @@ def _print_text(result_new: list[DiscoveredItem], policy_count: int, alerts_coun
         print(f"  published: {published} | score: {item.score:.1f} | matched: {', '.join(item.matched_keywords)}")
 
 
+def _notify_macos(items: list[DiscoveredItem]) -> None:
+    """Best-effort desktop notification. A watch job whose findings sit
+    unread in a log file doesn't actually get reviewed — this is what makes
+    "new items found" something a human notices without checking logs.
+    Never let a notification failure fail the scan itself.
+    """
+    if sys.platform != "darwin":
+        return
+    titles = "; ".join(item.title for item in items[:5])
+    for unsafe in ('"', "\\"):
+        titles = titles.replace(unsafe, "")
+    message = titles[:200] or "New USCIS updates found"
+    title = f"Veritas: {len(items)} new USCIS update(s)"
+    script = f'display notification "{message}" with title "{title}"'
+    try:
+        subprocess.run(["osascript", "-e", script], check=False, timeout=10)
+    except OSError:
+        pass
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Scan USCIS for new F-1/OPT-relevant guidance updates")
     parser.add_argument("--policy-url", default=POLICY_MANUAL_UPDATES_URL)
@@ -54,6 +75,7 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Print new items as a JSON array")
     parser.add_argument("--markdown", action="store_true", help="Print new items as a Markdown list")
     parser.add_argument("--no-save-state", action="store_true", help="Don't update the seen-items state file")
+    parser.add_argument("--notify", action="store_true", help="Show a macOS notification if new items are found")
     parser.add_argument("--user-agent", default=DEFAULT_USER_AGENT)
     args = parser.parse_args()
 
@@ -87,6 +109,9 @@ def main() -> None:
     if not args.no_save_state:
         all_relevant_urls = seen | {i.url for i in result.all_relevant_items}
         save_seen(args.state_file, all_relevant_urls)
+
+    if args.notify and result.new_items:
+        _notify_macos(result.new_items)
 
 
 if __name__ == "__main__":

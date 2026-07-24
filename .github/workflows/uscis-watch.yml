@@ -1,8 +1,12 @@
 name: USCIS Watch
 
+# Manual trigger only. This *was* on a weekly schedule, but USCIS blocks
+# GitHub Actions' datacenter IPs (confirmed: every scheduled run 403'd,
+# while the same script works fine from a residential IP) — see
+# DEPLOYMENT.md's "USCIS watch: local schedule" section for where the
+# actual recurring scan runs now. Kept here as an on-demand fallback in
+# case it's ever worth re-checking from CI.
 on:
-  schedule:
-    - cron: "0 13 * * 1" # Monday 13:00 UTC
   workflow_dispatch: {}
 
 permissions:

@@ -39,6 +39,32 @@ VERITAS_ALLOWED_ORIGINS=https://<your-vercel-app>.vercel.app
 
 Open the Vercel URL and repeat the same three checks from [TESTING.md](TESTING.md)'s browser section: ask a real question and confirm it streams and cites sources, ask an out-of-scope question and confirm it refuses, and check `/upload` and `/eval` load without console errors. A browser CORS error in the console almost always means step 3 wasn't done yet or the backend hasn't redeployed since.
 
+## USCIS watch: local schedule (not cloud)
+
+The USCIS discovery job (`backend/scripts/watch_uscis.py`, see README) originally ran on a GitHub Actions weekly cron. USCIS blocks GitHub Actions' datacenter IPs — every scheduled run 403's — while the same script works fine from a residential IP. So `.github/workflows/uscis-watch.yml` is now manual-trigger-only, and the actual recurring scan runs locally via macOS `launchd` instead, from wherever this repo lives on your Mac.
+
+**Install:**
+
+```bash
+cp backend/scripts/com.veritas.uscis-watch.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
+```
+
+This runs `watch_uscis.py --notify` every Monday at 9:00 AM local time (whenever the Mac is next awake, if it was asleep at that moment — launchd doesn't skip a missed run, it fires at the next wake). On finding new relevant items, it fires a macOS notification and updates `data/watch/seen.json` locally; output logs go to `data/watch/launchd.log` / `launchd.err.log` (gitignored).
+
+**Check it's loaded:** `launchctl list | grep veritas` should show `com.veritas.uscis-watch`.
+
+**Run it once immediately** (don't wait for Monday): `launchctl start com.veritas.uscis-watch`, then check `data/watch/launchd.log`.
+
+**Uninstall:**
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
+rm ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
+```
+
+**Note:** the plist hardcodes this machine's absolute path (`/Users/dhruvshelke/Desktop/veritas/...`). If you move or clone the repo elsewhere, edit the paths in `backend/scripts/com.veritas.uscis-watch.plist` before reinstalling. It also doesn't auto-commit `data/watch/seen.json` back to git — that state file will show as locally modified after a run; commit it whenever convenient, the same way the classifier model or golden set get committed.
+
 ## Known gotchas
 
 | Symptom | Cause | Fix |

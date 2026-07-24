@@ -1,3 +1,9 @@
 {
-  "seen_urls": []
+  "seen_urls": [
+    "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20210720-StudentsChangeOfStatus.pdf",
+    "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20230222-SpecialStudentRelief.pdf",
+    "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20230811-VictimsOfCrimes.pdf",
+    "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20231220-NonimmigrantStudents.pdf",
+    "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20240827-STEMOPT.pdf"
+  ]
 }

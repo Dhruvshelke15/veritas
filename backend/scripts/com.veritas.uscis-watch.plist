@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.veritas.uscis-watch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/dhruvshelke/Desktop/veritas/backend/.venv/bin/python</string>
+        <string>/Users/dhruvshelke/Desktop/veritas/backend/scripts/watch_uscis.py</string>
+        <string>--notify</string>
+    </array>
+
+    <!-- Every Monday at 9:00 AM local time. If the Mac is asleep at that
+         moment, launchd runs it at the next wake instead of skipping it. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/dhruvshelke/Desktop/veritas/data/watch/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/dhruvshelke/Desktop/veritas/data/watch/launchd.err.log</string>
+</dict>
+</plist>

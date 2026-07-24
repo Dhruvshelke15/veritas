@@ -8,6 +8,7 @@ data/chroma/*
 !data/uploads/.gitkeep
 !data/chroma/.gitkeep
 data/eval/*.db
+data/watch/*.log
 node_modules/
 dist/
 .DS_Store
