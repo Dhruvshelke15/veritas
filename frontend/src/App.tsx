@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { useChatStream } from "./hooks/useChatStream";
 import { ChatPage } from "./routes/ChatPage";
 import { UploadPage } from "./routes/UploadPage";
 import { EvalDashboardPage } from "./routes/EvalDashboardPage";
@@ -32,6 +33,7 @@ function PageTransition({ children }: { children: ReactNode }) {
 
 function App() {
   const location = useLocation();
+  const chat = useChatStream();
 
   return (
     <div className="min-h-screen bg-paper dark:bg-paper-dark">
@@ -77,7 +79,7 @@ function App() {
       <main>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><ChatPage /></PageTransition>} />
+            <Route path="/" element={<PageTransition><ChatPage turns={chat.turns} ask={chat.ask} /></PageTransition>} />
             <Route path="/upload" element={<PageTransition><UploadPage /></PageTransition>} />
             <Route path="/eval" element={<PageTransition><EvalDashboardPage /></PageTransition>} />
           </Routes>

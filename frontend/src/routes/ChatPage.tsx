@@ -1,12 +1,16 @@
 import { useEffect, useRef } from "react";
 import { Landmark } from "lucide-react";
 import { motion } from "motion/react";
-import { useChatStream } from "../hooks/useChatStream";
+import type { ChatTurn } from "../hooks/useChatStream";
 import { ChatMessage } from "../components/ChatMessage";
 import { MessageInput } from "../components/MessageInput";
 
-export function ChatPage() {
-  const { turns, ask } = useChatStream();
+interface ChatPageProps {
+  turns: ChatTurn[];
+  ask: (query: string) => Promise<void>;
+}
+
+export function ChatPage({ turns, ask }: ChatPageProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const isStreaming = turns.some((t) => t.status === "streaming");
 
