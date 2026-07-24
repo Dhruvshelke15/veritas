@@ -20,7 +20,8 @@ def test_health(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_documents_endpoint_returns_list(client: TestClient) -> None:
+def test_documents_endpoint_returns_list(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.ingestion.bootstrap.ensure_corpus_ingested", lambda: None)
     response = client.get("/documents")
     assert response.status_code == 200
     assert isinstance(response.json(), list)

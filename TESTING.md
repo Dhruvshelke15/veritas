@@ -17,15 +17,16 @@ cd backend
 
 Use `backend/.venv/bin/python` for everything below. If your system Python is already 3.9–3.12, you may not need this — but if `import tensorflow` fails, this is why.
 
-### API key
+### API keys
 
-Generation, dataset expansion, and the eval faithfulness judge all call Claude. Put your key in `backend/.env`:
+Generation, dataset expansion, and the eval faithfulness judge all call Claude. Retrieval (search, `/ask`, `/ask/stream`, the retrieval-hit-rate gate) calls HuggingFace's hosted Inference API for embeddings — see `app/ingestion/indexer.py`. Put both in `backend/.env`:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+HUGGINGFACE_API_KEY=hf_...
 ```
 
-It's loaded automatically at process start (`app/config.py` calls `load_dotenv()`) — no need to `export` it manually. Everything that doesn't touch Claude (retrieval, chunking, the classifier itself) works fine without a key.
+Get an HF token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) — the free tier's default "read" scope is enough, no paid account needed. Both are loaded automatically at process start (`app/config.py` calls `load_dotenv()`) — no need to `export` them manually. Unit tests never need a real value for either (Claude calls are faked; `tests/conftest.py` sets a placeholder `HUGGINGFACE_API_KEY` and embedding HTTP calls are mocked) — only live/manual runs (this document's steps 3 onward) need real keys.
 
 ### Frontend
 
@@ -57,7 +58,7 @@ npm run build
 
 All three should be clean with no errors.
 
-## 3. Retrieval sanity check (no API key needed)
+## 3. Retrieval sanity check (needs `HUGGINGFACE_API_KEY`, not `ANTHROPIC_API_KEY`)
 
 Ingest the corpus and confirm search returns relevant chunks:
 
@@ -71,7 +72,7 @@ done
 
 You should see chunks from `uscis_stem_opt_extension.md` / `uscis_policy_manual_vol2_f_ch5.md` mentioning the 90-day limit.
 
-## 4. Classifier routing — live check (needs API key)
+## 4. Classifier routing — live check (needs both API keys)
 
 Confirms all three routing paths behave correctly against the trained model in `data/classifier/model.keras`:
 
@@ -98,7 +99,7 @@ for query in [
 
 Note: the classifier fails open by design — a misclassification never produces a wrong *answer*, because citation validation at the generation layer is the actual backstop. Expect the classifier's per-category accuracy to be well below its training-set accuracy on naturally-phrased questions (see `data/eval/eval_results.db` after step 5) — this is a known, documented gap, not a bug.
 
-## 5. Full evaluation harness (needs API key)
+## 5. Full evaluation harness (needs both API keys)
 
 Runs all 30 golden questions through retrieval, generation, and LLM-judged faithfulness scoring, plus classifier accuracy:
 
@@ -160,3 +161,5 @@ The scheduled job (`.github/workflows/uscis-watch.yml`, weekly) runs this same s
 | `Could not resolve authentication method` | `ANTHROPIC_API_KEY` not in `backend/.env`, or `.env` sitting in the wrong directory | Key must be in `backend/.env` specifically (not repo root) |
 | `/ask/stream` hangs or errors in the browser but `curl` to `/health` works | A stale `uvicorn` process from an earlier run is still holding port 8000, possibly started under the wrong Python | `lsof -ti:8000 -sTCP:LISTEN \| xargs kill -9`, then restart |
 | Classifier confidently mislabels an obviously in-scope or out-of-scope question | Known distribution-shift gap between Claude-generated training phrasing and natural human phrasing (see `data/eval/eval_results.db`) | Not a bug to "fix" blindly — the RAG-layer refusal backstop is the actual safety net; verify the *answer* is still correct via step 4/5 rather than the classifier label alone |
+| `ValueError: The HUGGINGFACE_API_KEY environment variable is not set` | Missing from `backend/.env` (see API keys above) | Add it and restart — note `./run.sh` doesn't pick up a `.env` edit made while it's already running |
+| `ValueError: An embedding function already exists in the collection configuration... new: huggingface vs persisted: sentence_transformer` | `data/chroma/` has a stale index built with the old local embedding function, from before embeddings moved to the hosted API | Safe to delete and let it re-seed: `find data/chroma -mindepth 1 -not -name .gitkeep -delete` (it's gitignored/ephemeral by design — see DEPLOYMENT.md) |

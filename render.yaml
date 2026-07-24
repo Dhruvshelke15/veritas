@@ -9,6 +9,11 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Free HuggingFace account -> huggingface.co/settings/tokens (read
+      # scope is enough). Used for hosted query/document embeddings instead
+      # of loading PyTorch locally — see app/ingestion/indexer.py.
+      - key: HUGGINGFACE_API_KEY
+        sync: false
       # Set manually per-deployment (your Vercel URL) — sync: false means
       # blueprint syncs won't overwrite whatever you set in the dashboard.
       # Without this, every push resets it to the placeholder below and
@@ -16,10 +21,10 @@ services:
       - key: VERITAS_ALLOWED_ORIGINS
         sync: false
         value: http://localhost:5173
-      # TensorFlow (classifier) + PyTorch (embeddings) both resident at once
-      # OOMs the free instance type. Routing already fails open without a
-      # classifier (see app/rag/routing.py), so this is the safe default for
-      # `plan: free`. If you upgrade to an instance type with more RAM, set
-      # this to "true" to get the out-of-scope pre-filter + advice disclaimer.
+      # TensorFlow alone is still heavy enough to be worth skipping on the
+      # free instance type, even now that embeddings are hosted rather than
+      # local. Routing already fails open without a classifier (see
+      # app/rag/routing.py). Set to "true" if you upgrade to a bigger
+      # instance and want the out-of-scope pre-filter + advice disclaimer.
       - key: VERITAS_CLASSIFIER_ENABLED
         value: "false"

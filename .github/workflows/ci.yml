@@ -30,6 +30,8 @@ jobs:
         run: python -m pytest -q
 
       - name: Retrieval hit-rate gate
+        env:
+          HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
         run: python scripts/check_retrieval_gate.py --threshold 0.9
 
   frontend:

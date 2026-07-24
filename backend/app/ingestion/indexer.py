@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 
 import chromadb
 from chromadb.api.models.Collection import Collection
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+from chromadb.utils.embedding_functions import HuggingFaceEmbeddingFunction
 
 from app.config import settings
 from app.ingestion.chunking import Chunk
@@ -42,7 +42,12 @@ def get_collection() -> Collection:
         with _collection_lock:
             if _collection is None:
                 client = chromadb.PersistentClient(path=str(settings.chroma_dir))
-                embedding_fn = SentenceTransformerEmbeddingFunction(model_name=settings.embedding_model)
+                # Hosted API instead of a local sentence-transformers model:
+                # loading the local model (PyTorch) into a long-running
+                # process was OOMing memory-constrained deployments. This
+                # needs HUGGINGFACE_API_KEY (or CHROMA_HUGGINGFACE_API_KEY)
+                # set in the environment.
+                embedding_fn = HuggingFaceEmbeddingFunction(model_name=f"sentence-transformers/{settings.embedding_model}")
                 _collection = client.get_or_create_collection(
                     name=settings.collection_name,
                     embedding_function=embedding_fn,
@@ -64,6 +69,10 @@ def index_chunks(chunks: list[Chunk]) -> int:
 
 
 def similarity_search(query: str, top_k: int | None = None) -> list[SearchHit]:
+    from app.ingestion.bootstrap import ensure_corpus_ingested
+
+    ensure_corpus_ingested()
+
     k = top_k or settings.default_top_k
     collection = get_collection()
     result = collection.query(query_texts=[query], n_results=k)
@@ -85,6 +94,10 @@ def similarity_search(query: str, top_k: int | None = None) -> list[SearchHit]:
 
 
 def list_documents() -> list[DocumentSummary]:
+    from app.ingestion.bootstrap import ensure_corpus_ingested
+
+    ensure_corpus_ingested()
+
     collection = get_collection()
     result = collection.get(include=["metadatas"])
     metadatas = result.get("metadatas") or []

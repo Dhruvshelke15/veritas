@@ -3,13 +3,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from ingest_corpus import ingest_corpus
 
 from app.config import settings
 from app.eval.golden import load_golden_set
 from app.eval.retrieval import hit_rate, retrieval_hit
+from app.ingestion.bootstrap import ingest_corpus
 from app.ingestion.indexer import similarity_search
 
 

@@ -25,11 +25,10 @@ COPY data/ data/
 
 WORKDIR /app/backend
 
-# Bakes the 5 USCIS/ICE corpus docs into the image as a populated ChromaDB
-# directory, so a fresh container serves real answers immediately instead of
-# re-embedding on every cold start. Corpus changes require a rebuild+redeploy
-# to take effect — by design, matching how corpus updates flow through git.
-RUN python scripts/ingest_corpus.py
+# Corpus ingestion happens lazily at runtime on first request instead of
+# here at build time (see app/ingestion/bootstrap.py): embeddings are now
+# computed via a hosted API (HUGGINGFACE_API_KEY), and that credential is
+# only available as a runtime env var, not during `docker build`.
 
 EXPOSE 8000
 
