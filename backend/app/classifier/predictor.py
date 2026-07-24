@@ -34,6 +34,8 @@ class QueryClassifier:
 
 @lru_cache(maxsize=1)
 def get_classifier() -> QueryClassifier | None:
+    if not settings.classifier_enabled:
+        return None
     model_path = settings.classifier_model_path
     if not model_path.exists():
         return None

@@ -28,6 +28,13 @@ class Settings(BaseSettings):
 
     classifier_model_path: Path = REPO_ROOT / "data" / "classifier" / "model.keras"
     classifier_reject_threshold: float = 0.7
+    # TensorFlow + PyTorch (via sentence-transformers) both resident at once
+    # is enough to OOM a memory-constrained deployment. Routing already fails
+    # open when there's no classifier (see app/rag/routing.py: route(None)
+    # -> "standard"), so this is a safe memory-pressure release valve — it
+    # costs the out-of-scope pre-filter and the advice-seeking disclaimer,
+    # not the citation-validation refusal backstop.
+    classifier_enabled: bool = True
 
     golden_set_path: Path = REPO_ROOT / "data" / "eval" / "golden_set.jsonl"
     eval_db_path: Path = REPO_ROOT / "data" / "eval" / "eval_results.db"

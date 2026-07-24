@@ -11,3 +11,10 @@ services:
         sync: false
       - key: VERITAS_ALLOWED_ORIGINS
         value: http://localhost:5173
+      # TensorFlow (classifier) + PyTorch (embeddings) both resident at once
+      # OOMs the free instance type. Routing already fails open without a
+      # classifier (see app/rag/routing.py), so this is the safe default for
+      # `plan: free`. If you upgrade to an instance type with more RAM, set
+      # this to "true" to get the out-of-scope pre-filter + advice disclaimer.
+      - key: VERITAS_CLASSIFIER_ENABLED
+        value: "false"
