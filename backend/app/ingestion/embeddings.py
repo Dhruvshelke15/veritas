@@ -20,14 +20,20 @@ class HFInferenceEmbeddingFunction(EmbeddingFunction[Documents]):
     with whatever the current routing actually is.
     """
 
-    def __init__(self, model_name: str, provider: str = "hf-inference") -> None:
+    def __init__(self, model_name: str, provider: str = "hf-inference", timeout: float = 45.0) -> None:
         api_key = os.environ.get("HUGGINGFACE_API_KEY") or os.environ.get("CHROMA_HUGGINGFACE_API_KEY")
         if not api_key:
             raise ValueError("The HUGGINGFACE_API_KEY environment variable is not set.")
 
         self.model_name = model_name
         self.provider = provider
-        self._client = InferenceClient(model=model_name, provider=provider, token=api_key)
+        # InferenceClient's own default timeout is None, which its docstring
+        # describes as "loop until the server is available" -- unbounded. A
+        # transient "model loading" response from HF then hangs the request
+        # forever instead of failing cleanly (observed: 2+ minutes with no
+        # response). Bounded here so a slow cold start surfaces as a real,
+        # catchable error instead of a silent hang.
+        self._client = InferenceClient(model=model_name, provider=provider, token=api_key, timeout=timeout)
 
     def __call__(self, input: Documents) -> Embeddings:
         vectors = self._client.feature_extraction(list(input))
