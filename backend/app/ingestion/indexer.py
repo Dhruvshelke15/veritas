@@ -3,10 +3,10 @@ from dataclasses import dataclass, replace
 
 import chromadb
 from chromadb.api.models.Collection import Collection
-from chromadb.utils.embedding_functions import HuggingFaceEmbeddingFunction
 
 from app.config import settings
 from app.ingestion.chunking import Chunk
+from app.ingestion.embeddings import HFInferenceEmbeddingFunction
 
 
 @dataclass(frozen=True)
@@ -47,7 +47,7 @@ def get_collection() -> Collection:
                 # process was OOMing memory-constrained deployments. This
                 # needs HUGGINGFACE_API_KEY (or CHROMA_HUGGINGFACE_API_KEY)
                 # set in the environment.
-                embedding_fn = HuggingFaceEmbeddingFunction(model_name=f"sentence-transformers/{settings.embedding_model}")
+                embedding_fn = HFInferenceEmbeddingFunction(model_name=f"sentence-transformers/{settings.embedding_model}")
                 _collection = client.get_or_create_collection(
                     name=settings.collection_name,
                     embedding_function=embedding_fn,
