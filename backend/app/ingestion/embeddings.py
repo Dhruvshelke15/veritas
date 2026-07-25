@@ -1,9 +1,13 @@
 import os
+import time
 from typing import Any
 
 import numpy as np
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings, Space
 from huggingface_hub import InferenceClient
+from huggingface_hub.errors import HfHubHTTPError
+
+_RATE_LIMIT_RETRY_DELAYS_SECONDS = (1.0, 2.0, 4.0)
 
 
 class HFInferenceEmbeddingFunction(EmbeddingFunction[Documents]):
@@ -36,8 +40,23 @@ class HFInferenceEmbeddingFunction(EmbeddingFunction[Documents]):
         self._client = InferenceClient(model=model_name, provider=provider, token=api_key, timeout=timeout)
 
     def __call__(self, input: Documents) -> Embeddings:
-        vectors = self._client.feature_extraction(list(input))
-        return [np.array(vector, dtype=np.float32) for vector in vectors]
+        # huggingface_hub does a one-time model-metadata lookup (a separate
+        # call from the actual embedding request, cached per-process
+        # afterward) the first time this model+task pair is used. That
+        # lookup has no built-in retry, and observed in production it gets
+        # 429-rate-limited on a real fraction of cold starts -- not a rare
+        # fluke, a recurring failure mode. Retried here with backoff since
+        # a 429 is expected to be transient; anything else (auth, 5xx)
+        # still raises immediately.
+        for delay in (*_RATE_LIMIT_RETRY_DELAYS_SECONDS, None):
+            try:
+                vectors = self._client.feature_extraction(list(input))
+                return [np.array(vector, dtype=np.float32) for vector in vectors]
+            except HfHubHTTPError as exc:
+                if exc.response.status_code != 429 or delay is None:
+                    raise
+                time.sleep(delay)
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @staticmethod
     def name() -> str:
