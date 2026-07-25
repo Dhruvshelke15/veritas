@@ -1,45 +1,83 @@
 # Deployment
 
-Backend and frontend deploy separately: the backend (FastAPI + ChromaDB + a TensorFlow classifier) needs a persistent server process, so it goes on **Render**; the frontend is a static Vite build, so it goes on **Vercel**. Vercel/CloudFront-style platforms can't host the backend directly — there's no serverless-function shape that fits a long-running process with a ChromaDB index and (optionally) a TensorFlow classifier.
+Backend and frontend deploy separately: the backend (FastAPI + ChromaDB, optionally a TensorFlow classifier) needs a persistent server process, so it goes on **Google Cloud Run**; the frontend is a static Vite build, so it goes on **Vercel**.
 
 Deploy the backend first — the frontend build needs its URL.
 
-## 1. Backend on Render
+## 0. Why Cloud Run, not Render
 
-1. Push this repo to GitHub (already done if you're reading this from the repo).
-2. In Render: **New → Blueprint**, point it at this repo. It'll pick up [`render.yaml`](render.yaml) at the repo root, which defines a Docker web service built from [`Dockerfile`](Dockerfile).
-3. Render will prompt for the two secrets marked `sync: false` in `render.yaml`: **`ANTHROPIC_API_KEY`** (generation) and **`HUGGINGFACE_API_KEY`** (embeddings — free account, generate at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens), default "read" scope is enough).
-4. Deploy. Corpus ingestion happens lazily on the first real request (`app/ingestion/bootstrap.py`), not at build time — the very first `/ask` or `/documents` call after a cold start will be a bit slower while it seeds the 5 USCIS/ICE docs; every request after that is fast.
-5. Once it's live, note the URL Render gives you (`https://<something>.onrender.com`). Confirm it works: `curl https://<something>.onrender.com/health` should return `{"status":"ok"}`.
+This project was originally deployed on Render's free tier and moved off it after four separate reliability incidents in one deployment cycle: repeated OOM kills (PyTorch + ChromaDB + Claude client resident at once), a `render.yaml` blueprint sync silently overwriting a manually-set CORS env var, and two unrelated request hangs. The common thread wasn't Render specifically — it's that free tiers on most PaaS platforms throttle CPU and cap memory hard enough that this app's dependency footprint (even after trimming PyTorch out of the hot path) sits right at the edge of what's viable. See `docs/design-decisions.md` for the full incident history.
 
-**Storage is ephemeral by design**: documents uploaded via `/ingest` at runtime, and the seeded corpus itself, live only as long as that container instance does, and get re-seeded from scratch (fast — it's a hosted-API HTTP call now, not a local model load) on the next deploy or restart. If you outgrow this, Render's paid plans support attaching a persistent disk — mount it at `data/chroma` and `data/uploads`.
+Cloud Run's relevant advantages for this app: real (non-shared-throttled) CPU during request handling, a free tier generous enough that a low-traffic personal project likely never bills, `--min-instances` to eliminate cold starts entirely if wanted, and env var changes applied via `gcloud`/console are authoritative — no separate config file that can silently overwrite a dashboard value the way `render.yaml` did.
 
-**Free-tier RAM (confirmed by real incidents, not hypothetical)**: the first deployed version ran embeddings locally via `sentence-transformers`/PyTorch, and that — resident in the same process as ChromaDB and the Claude client — genuinely OOM'd Render's free instance type on every request; Render's own monitoring flagged it directly. Embeddings now go through HuggingFace's hosted Inference Providers routing instead (`app/ingestion/embeddings.py` — a small custom `EmbeddingFunction` built on `huggingface_hub.InferenceClient`, not chromadb's own built-in `HuggingFaceEmbeddingFunction`, which posts to a domain HF has since decommissioned; see `docs/design-decisions.md`), which removes PyTorch from the deployed process entirely. Verified end-to-end against the real API: retrieval hit rate identical to the original local-model numbers. `render.yaml` also defaults `VERITAS_CLASSIFIER_ENABLED=false` to skip TensorFlow too, since routing already fails open without a classifier (`app/rag/routing.py`) — you lose the out-of-scope pre-filter and the advice-seeking disclaimer, not the citation-validation refusal backstop that actually keeps answers grounded. If you'd rather keep the classifier, upgrade to a paid instance type with more RAM and set `VERITAS_CLASSIFIER_ENABLED=true`.
+## 1. Backend on Google Cloud Run
 
-**Cold starts**: Render's free web services spin down after inactivity, and the first request after idle also has to seed the corpus (a handful of HTTP calls to HuggingFace). Expect the first request after idle to be noticeably slower than the rest; this is expected, not a bug.
+One-time setup:
+
+```bash
+brew install --cask google-cloud-sdk   # if not already installed
+gcloud auth login                       # opens a browser
+gcloud projects create YOUR_PROJECT_ID --name="Veritas"
+gcloud config set project YOUR_PROJECT_ID
+gcloud billing projects link YOUR_PROJECT_ID --billing-account=YOUR_BILLING_ACCOUNT_ID
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+```
+
+(`gcloud billing accounts list` shows your billing account IDs if you don't have one handy. Cloud Run requires billing enabled on the project even to use the free tier — you're not charged unless you exceed it.)
+
+Deploy, from the repo root:
+
+```bash
+gcloud run deploy veritas-backend \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --memory 1Gi \
+  --cpu 1 \
+  --min-instances 0 \
+  --max-instances 3 \
+  --timeout 300 \
+  --set-env-vars "VERITAS_CLASSIFIER_ENABLED=false,VERITAS_ALLOWED_ORIGINS=http://localhost:5173,ANTHROPIC_API_KEY=sk-ant-...,HUGGINGFACE_API_KEY=hf_..."
+```
+
+`--source .` builds the [`Dockerfile`](Dockerfile) at the repo root via Cloud Build and pushes it to Artifact Registry automatically — no manual `docker build`/`push`. **The first deploy's build takes 10+ minutes** (installing `tensorflow`/`torch`/`chromadb` from scratch, no layer cache yet); this timed out a plain terminal wait more than once during initial setup. If it does, the build itself keeps running server-side regardless — check `gcloud builds list --region us-central1` for `SUCCESS`, then deploy the already-built image directly (fast, no rebuild) instead of re-running `--source .`:
+
+```bash
+gcloud run deploy veritas-backend \
+  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/cloud-run-source-deploy/veritas-backend \
+  --region us-central1 \
+  --allow-unauthenticated --memory 1Gi --cpu 1 --min-instances 0 --max-instances 3 --timeout 300 \
+  --set-env-vars "..."
+```
+
+Once live, `gcloud run services describe veritas-backend --region us-central1 --format="value(status.url)"` prints the service URL. Confirm it: `curl <url>/health` should return `{"status":"ok"}`.
+
+**Storage is ephemeral by design**: documents uploaded via `/ingest`, and the seeded corpus itself, live only as long as that container instance does, and get re-seeded from scratch on the next revision or cold start (fast — it's a hosted-API HTTP call now, not a local model load; see `app/ingestion/bootstrap.py`). Cloud Run supports mounting a persistent volume (Cloud Storage FUSE or a Filestore-backed volume) if you outgrow this.
+
+**Cold starts**: with `--min-instances 0` (the default above, cheapest), Cloud Run scales to zero after inactivity and the next request pays a cold-start cost, including re-seeding the corpus. If that's ever annoying, `gcloud run services update veritas-backend --region us-central1 --min-instances 1` keeps one instance warm permanently (small ongoing cost — check current Cloud Run pricing before enabling).
 
 ## 2. Frontend on Vercel
 
 1. In Vercel: **New Project**, import this repo, set **Root Directory** to `frontend`.
 2. Framework preset should auto-detect Vite. Build command `npm run build`, output directory `dist` (Vercel defaults are already correct).
-3. Add an environment variable: **`VITE_API_BASE_URL`** = the Render backend URL from step 1 (e.g. `https://veritas-backend.onrender.com`, no trailing slash). This is read at *build* time (see `frontend/src/api/client.ts`) — changing it later requires a redeploy, not just a restart.
+3. Add an environment variable: **`VITE_API_BASE_URL`** = the Cloud Run URL from step 1 (e.g. `https://veritas-backend-xxxxx-uc.a.run.app`, no trailing slash). This is read at *build* time (see `frontend/src/api/client.ts`) — changing it later requires a redeploy, not just a restart.
 4. Deploy. [`vercel.json`](frontend/vercel.json) handles SPA routing so refreshing on `/upload` or `/eval` doesn't 404.
 
 ## 3. Close the loop: CORS
 
-The backend only accepts requests from origins listed in `VERITAS_ALLOWED_ORIGINS` (comma-separated; see `app/config.py`). Once you have the Vercel URL, go back to the Render service's environment variables and set:
+The backend only accepts requests from origins listed in `VERITAS_ALLOWED_ORIGINS` (comma-separated; see `app/config.py`). Once you have the Vercel URL:
 
+```bash
+gcloud run services update veritas-backend \
+  --region us-central1 \
+  --update-env-vars "VERITAS_ALLOWED_ORIGINS=https://<your-vercel-app>.vercel.app,http://localhost:5173"
 ```
-VERITAS_ALLOWED_ORIGINS=https://<your-vercel-app>.vercel.app
-```
 
-(Include `http://localhost:5173` too, comma-separated, if you still want local dev to hit the deployed backend.) Redeploy the backend for the change to take effect.
-
-`render.yaml` marks this variable `sync: false`, meaning the dashboard value you set here is authoritative and future blueprint syncs (i.e. every push) won't reset it back to the placeholder in the file. If you ever see a real CORS error again after this has already worked once, check the dashboard value first — it's more likely to have been reset than to be a new bug.
+Unlike Render's blueprint sync, this value is only ever changed by an explicit `gcloud`/console action — there's no config file that silently resets it on every deploy.
 
 ## 4. Verify
 
-Open the Vercel URL and repeat the same three checks from [TESTING.md](TESTING.md)'s browser section: ask a real question and confirm it streams and cites sources, ask an out-of-scope question and confirm it refuses, and check `/upload` and `/eval` load without console errors. A browser CORS error in the console almost always means step 3 wasn't done yet or the backend hasn't redeployed since.
+Open the Vercel URL and repeat the same three checks from [TESTING.md](TESTING.md)'s browser section: ask a real question and confirm it streams and cites sources, ask an out-of-scope question and confirm it refuses, and check `/upload` and `/eval` load without console errors. A browser CORS error in the console almost always means step 3 wasn't done yet, or the backend hasn't picked up the env var change (`gcloud run services update` deploys a new revision automatically, but give it a few seconds).
 
 ## USCIS watch: local schedule (not cloud)
 
@@ -71,13 +109,10 @@ rm ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Browser console: CORS error on every `/api/*` request | `VERITAS_ALLOWED_ORIGINS` on Render doesn't include the Vercel origin | Set it (step 3) and redeploy the backend |
-| CORS error comes back after previously working | Before this was marked `sync: false`, every blueprint sync (i.e. every push) reset `VERITAS_ALLOWED_ORIGINS` back to the `render.yaml` placeholder, silently wiping your dashboard override | Re-set it on the dashboard once more — it should stick now |
+| Browser console: CORS error on every `/api/*` request | `VERITAS_ALLOWED_ORIGINS` on Cloud Run doesn't include the Vercel origin | Set it (step 3) |
 | Frontend requests go to `localhost:8000` / relative `/api` 404s in production | `VITE_API_BASE_URL` wasn't set before the Vercel build | Set the env var in Vercel project settings and trigger a new deploy (it's baked in at build time, not read at runtime) |
-| Render build fails installing `tensorflow`/`torch` | Same root cause as the local `.venv` gotcha in TESTING.md — these are large, platform-specific wheels | Check the build log for the actual pip error; Render's Docker builds run linux/amd64 by default, which the pinned `tensorflow-cpu` wheel supports |
-| Backend crash-loops shortly after boot | If `VERITAS_CLASSIFIER_ENABLED=true`, TensorFlow alone can still be enough to OOM the free instance | Set `VERITAS_CLASSIFIER_ENABLED=false`, or upgrade to a paid instance type with more RAM |
-| `/ask/stream` dies right after the `meta` event, no error, `/health` returns 502 immediately after | This was the original OOM signature from local `sentence-transformers`/PyTorch, before embeddings moved to the hosted API. Should no longer happen | If it recurs, check Render's Logs/Events for another "exceeded memory limit" — if confirmed, upgrade the instance type; there's no cheaper lever left to pull without a different architecture change |
-| `/ask/stream` hangs indefinitely after `meta` (minutes, not seconds) but `/health` stays fast and healthy the whole time | Not OOM — the process is fine. `huggingface_hub.InferenceClient`'s default `timeout` is `None` ("loop until the server is available" per its own docstring), so a slow/cold response from HF during the first-request corpus seeding could hang forever with no error. Fixed: `app/ingestion/embeddings.py` now passes an explicit `timeout=45.0` | Should already be fixed. If it still happens, the request should now fail within ~45s with a real error instead of hanging — if it doesn't, something else is wrong and worth a fresh look |
-| `ValueError: The HUGGINGFACE_API_KEY environment variable is not set` (in Render logs, surfaced to the user as a generic "something went wrong" chat error) | Secret wasn't set in step 1, or was set on a different service | Add it in the Render dashboard's Environment tab and redeploy |
-| Deploy fails with "Port scan timeout reached" even though the logs show uvicorn started right after | `app.main`'s import chain was slow enough on Render's free-tier CPU to blow past the port-scan window before uvicorn could bind. Root cause found and fixed: `langchain_text_splitters`' `__init__.py` eagerly imports every splitter it ships, including one that pulls in the full torch/transformers stack, even though this project only uses the plain character splitter (`app/ingestion/chunking.py`) | Should already be fixed (the import is now deferred into the function that needs it — confirmed ~83% faster `app.main` import locally). If it recurs, profile with `python -X importtime -c "import app.main"` and defer whatever's heaviest the same way |
-| Uploaded documents disappear after a while | Expected — see "Storage is ephemeral by design" above | Add a persistent disk if you need this to survive restarts |
+| `gcloud run deploy --source .` seems to hang / your terminal times out | First build (no layer cache) genuinely takes 10+ minutes | Check `gcloud builds list --region us-central1` — if `SUCCESS`, deploy the already-built image directly (see step 1) instead of re-running `--source .` |
+| `ValueError: The HUGGINGFACE_API_KEY environment variable is not set` (surfaced to the user as a generic "something went wrong" chat error) | Env var wasn't set, or was set on a different service/revision | `gcloud run services update veritas-backend --region us-central1 --update-env-vars HUGGINGFACE_API_KEY=hf_...` |
+| `/ask/stream` hangs for a while (not indefinitely — bounded to ~45s) after the `meta` event | `huggingface_hub.InferenceClient` waiting on a slow/cold response from HF during first-request corpus seeding | Expected occasionally on a cold start; `app/ingestion/embeddings.py` bounds this to 45s so it fails with a real error rather than hanging forever. If it's consistently slow, `--min-instances 1` avoids the cold-seeding path being hit as often |
+| Uploaded documents disappear after a while | Expected — see "Storage is ephemeral by design" above | Mount a persistent volume if you need this to survive restarts |
+| `/ask/stream` returns a clean "Something went wrong" error; logs show `huggingface_hub.errors.HfHubHTTPError: ... 429 Too Many Requests` from `huggingface.co/api/models/...` | HF rate-limited the one-time model-metadata lookup `huggingface_hub` does on a cold start (separate from the actual embedding call, cached per-process afterward via `@lru_cache`) — usually from bursty testing against the same token, not a structural problem | Just retry — confirmed transient in practice, resolves within seconds. If it's persistent, it's a token-level rate limit worth checking on HF's side |

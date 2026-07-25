@@ -1,6 +1,8 @@
 # Backend image only — the frontend is a static build meant for Vercel/Netlify/etc.
-# Build context is the repo root (needs both backend/ and data/), e.g.:
-#   docker build -f Dockerfile -t veritas-backend .
+# Deployed on Google Cloud Run (see DEPLOYMENT.md) via `gcloud run deploy
+# --source .`, which builds this Dockerfile with Cloud Build and pushes it
+# for you — no manual `docker build`/`push` needed. Build context is the
+# repo root (needs both backend/ and data/).
 
 FROM python:3.12-slim
 
@@ -32,6 +34,6 @@ WORKDIR /app/backend
 
 EXPOSE 8000
 
-# $PORT is injected by most PaaS (Render, Railway, ...); falls back to 8000
+# $PORT is injected by Cloud Run (and most other PaaS); falls back to 8000
 # for a plain `docker run`.
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
