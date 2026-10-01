@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import { animate, motion, useMotionValue, useMotionValueEvent } from "motion/react";
 
-const ACCENT = "text-[#2a78d6] dark:text-[#3987e5]";
-const DE_EMPHASIS = "text-stone-300 dark:text-stone-700";
+const ACCENT = "text-form dark:text-form-dark";
+const DE_EMPHASIS = "text-rule dark:text-rule-dark";
 
 function sparklinePoints(values: number[], width: number, height: number): [number, number][] {
   const min = Math.min(...values);
@@ -30,13 +29,11 @@ function useCountUp(target: number | null, duration = 0.8): number {
 }
 
 export function StatTile({
-  icon: Icon,
   label,
   value,
   format,
   trend,
 }: {
-  icon: LucideIcon;
   label: string;
   value: number | null;
   format: (v: number) => string;
@@ -51,13 +48,10 @@ export function StatTile({
   const animated = useCountUp(value);
 
   return (
-    <div className="flex flex-1 flex-col gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 dark:border-stone-800 dark:bg-stone-900">
-      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-        <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
-        {label}
-      </span>
+    <div className="flex flex-col gap-2 rounded-md border border-rule bg-sheet px-4 py-3.5 dark:border-rule-dark dark:bg-sheet-dark">
+      <span className="text-sm font-medium text-muted dark:text-muted-dark">{label}</span>
       <div className="flex items-end justify-between gap-3">
-        <span className="text-2xl font-semibold text-stone-900 dark:text-stone-100">
+        <span className="text-3xl font-bold tabular-nums">
           {value === null ? "—" : format(animated)}
         </span>
         {hasTrend && (

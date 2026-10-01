@@ -29,8 +29,8 @@ export function UploadPage() {
     setUploading(true);
     try {
       const result = await uploadDocument(file);
-      toast.success(`${result.filename} ingested`, {
-        description: `${result.chunks_indexed} chunks indexed`,
+      toast.success(`Added ${result.filename}`, {
+        description: `${result.chunks_indexed} passages are now searchable.`,
       });
       await reload();
     } catch (err) {
@@ -41,24 +41,22 @@ export function UploadPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-display text-2xl font-medium text-stone-900 dark:text-stone-100">
-        Documents
-      </h1>
-      <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400">
-        Upload source documents (.pdf, .md, .txt) to ground answers in.
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <h1 className="text-2xl font-bold tracking-tight">Sources</h1>
+      <p className="mt-2 max-w-xl font-serif text-muted dark:text-muted-dark">
+        The documents Veritas answers from. Add a PDF, Markdown, or text file to include it in future answers.
       </p>
 
-      <div className="mt-6">
+      <div className="mt-8 max-w-3xl">
         <UploadDropzone onUpload={handleUpload} uploading={uploading} />
       </div>
 
-      <div className="mt-10">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-          Ingested documents
-        </h2>
+      <h2 className="mt-12 text-lg font-bold">
+        In the library{!loading && documents.length > 0 ? ` (${documents.length})` : ""}
+      </h2>
+      <div className="mt-3 max-w-3xl">
         {loading ? (
-          <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+          <p className="text-sm text-muted dark:text-muted-dark">Loading the library</p>
         ) : (
           <DocumentList documents={documents} />
         )}

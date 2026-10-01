@@ -1,28 +1,30 @@
 import { motion } from "motion/react";
 
-const BAR_FILL = "text-[#2a78d6] dark:text-[#3987e5]";
+const BAR_FILL = "text-form dark:text-form-dark";
 const BAR_THICKNESS = 22;
 const SLOT_WIDTH = 76;
 const CHART_HEIGHT = 120;
+const TOP_PAD = 18; // room for the value label above a 100% bar
 
 export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, number> }) {
   const categories = Object.entries(accuracy).sort(([a], [b]) => a.localeCompare(b));
   if (categories.length === 0) {
-    return <p className="text-sm text-stone-500 dark:text-stone-400">No classifier data yet.</p>;
+    return <p className="text-sm text-muted dark:text-muted-dark">No classifier data yet.</p>;
   }
 
   const width = categories.length * SLOT_WIDTH;
 
   return (
     <div className="flex flex-col gap-2">
-      <svg width={width} height={CHART_HEIGHT + 34} role="img" aria-label="Classifier accuracy by category">
+      <svg width={width} height={CHART_HEIGHT + TOP_PAD + 34} role="img" aria-label="Question sorting accuracy by category">
+        <g transform={`translate(0 ${TOP_PAD})`}>
         <line
           x1={0}
           y1={CHART_HEIGHT}
           x2={width}
           y2={CHART_HEIGHT}
           stroke="currentColor"
-          className="text-stone-300 dark:text-stone-700"
+          className="text-rule dark:text-rule-dark"
           strokeWidth={1}
         />
         {categories.map(([category, value], i) => {
@@ -50,7 +52,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
                 x={slotCenter}
                 y={y - 6}
                 textAnchor="middle"
-                className="fill-stone-700 text-[11px] dark:fill-stone-300"
+                className="fill-ink text-[11px] dark:fill-ink-dark"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.06 + 0.4, duration: 0.2 }}
@@ -61,7 +63,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
                 x={slotCenter}
                 y={CHART_HEIGHT + 14}
                 textAnchor="middle"
-                className="fill-stone-500 text-[10px] dark:fill-stone-400"
+                className="fill-muted text-[10px] dark:fill-muted-dark"
               >
                 {labelLines.map((line, li) => (
                   <tspan key={li} x={slotCenter} dy={li === 0 ? 0 : 12}>
@@ -72,6 +74,7 @@ export function CategoryAccuracyBar({ accuracy }: { accuracy: Record<string, num
             </g>
           );
         })}
+        </g>
       </svg>
     </div>
   );

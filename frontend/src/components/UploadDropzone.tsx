@@ -1,7 +1,5 @@
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Loader2, UploadCloud } from "lucide-react";
-import { motion } from "motion/react";
 import clsx from "clsx";
 
 const ACCEPTED = ".pdf,.md,.txt";
@@ -20,26 +18,22 @@ export function UploadDropzone({
     event.preventDefault();
     setIsDragging(false);
     const file = event.dataTransfer.files[0];
-    if (file) onUpload(file);
+    if (file && !uploading) onUpload(file);
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.005 }}
-      whileTap={{ scale: 0.995 }}
-      animate={{ scale: isDragging ? 1.01 : 1 }}
+    <div
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      onClick={() => inputRef.current?.click()}
       className={clsx(
-        "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+        "flex flex-col gap-4 rounded-md border-2 border-dashed px-6 py-8 transition-colors sm:flex-row sm:items-center sm:justify-between",
         isDragging
-          ? "border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/30"
-          : "border-stone-300 hover:border-brand-300 hover:bg-stone-50 dark:border-stone-700 dark:hover:border-brand-600 dark:hover:bg-stone-900",
+          ? "border-form bg-sheet dark:border-form-dark dark:bg-sheet-dark"
+          : "border-rule dark:border-rule-dark",
       )}
     >
       <input
@@ -53,17 +47,20 @@ export function UploadDropzone({
           e.target.value = "";
         }}
       />
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-800">
-        {uploading ? (
-          <Loader2 className="h-5 w-5 animate-spin text-brand-600 dark:text-brand-300" strokeWidth={2} />
-        ) : (
-          <UploadCloud className="h-5 w-5 text-brand-600 dark:text-brand-300" strokeWidth={2} />
-        )}
+      <div>
+        <p className="font-semibold">{uploading ? "Adding your document" : "Add a document"}</p>
+        <p className="mt-1 text-sm text-muted dark:text-muted-dark">
+          Drop a .pdf, .md, or .txt file here, or choose one from your computer.
+        </p>
       </div>
-      <p className="mt-3 text-sm font-medium text-stone-700 dark:text-stone-300">
-        {uploading ? "Uploading…" : "Drop a document here, or click to browse"}
-      </p>
-      <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Accepted: {ACCEPTED}</p>
-    </motion.div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="shrink-0 rounded-md border border-form px-4 py-2 text-sm font-semibold text-form transition-colors hover:bg-form hover:text-white disabled:opacity-50 dark:border-form-dark dark:text-form-dark dark:hover:bg-form-dark dark:hover:text-paper-dark"
+      >
+        {uploading ? "Adding" : "Choose file"}
+      </button>
+    </div>
   );
 }
