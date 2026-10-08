@@ -14,7 +14,7 @@ The project started domain-agnostic and was deliberately moved into F-1/OPT/STEM
 flowchart TB
     subgraph ingest["Ingestion"]
         Corpus["USCIS / ICE source docs"] --> Chunker["chunking.py<br/>800 chars, 150 overlap"]
-        Chunker --> Embed["HF Inference API<br/>all-MiniLM-L6-v2 (hosted)"]
+        Chunker --> Embed["ONNX Runtime<br/>all-MiniLM-L6-v2 (local)"]
         Embed --> Chroma[("ChromaDB")]
     end
 
@@ -55,7 +55,7 @@ A source that parses to zero items is treated as a failure, not "no updates" —
 |---|---|---|
 | Backend | FastAPI | Async, typed, thin |
 | Retrieval | ChromaDB (native client) | LangChain only for loading/splitting; retrieval itself is a direct Chroma client — no unnecessary abstraction |
-| Embeddings | `all-MiniLM-L6-v2` via HuggingFace's hosted Inference API | Started as a local `sentence-transformers` model; moved to hosted after PyTorch resident in a long-running process OOM'd a memory-constrained deployment — see [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Embeddings | `all-MiniLM-L6-v2` via chromadb's built-in ONNX embedding function | Local and keyless; avoids both PyTorch's memory footprint and hosted-API quotas — see [docs/design-decisions.md](docs/design-decisions.md) |
 | Generation | Claude Haiku via the Anthropic API | Fast, cheap, good instruction-following for a grounded-answer task |
 | Query classifier | TensorFlow / Keras | Small text classifier, routes queries before retrieval |
 | Frontend | React + TypeScript + Vite + Tailwind | Streaming chat, citations panel, eval dashboard |

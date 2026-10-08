@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from huggingface_hub import InferenceClient
+from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
 from app.config import settings
 from app.ingestion import bootstrap, indexer
@@ -11,15 +11,14 @@ from app.ingestion.chunking import Chunk
 def _isolated_chroma(tmp_path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, "chroma_dir", tmp_path / "chroma")
     monkeypatch.setattr(settings, "collection_name", "test-collection")
-    monkeypatch.setenv("HUGGINGFACE_API_KEY", "fake-token-for-tests")
     indexer._collection = None
     yield
     indexer._collection = None
 
 
-def _fake_feature_extraction(self, texts):
+def _fake_embed(self, input):
     # Deterministic fake embedding: same text -> same vector, within this process.
-    return np.array([[float(hash(t) % 97) / 97.0] * 8 for t in texts], dtype=np.float32)
+    return np.array([[float(hash(t) % 97) / 97.0] * 8 for t in input], dtype=np.float32)
 
 
 def make_chunk(chunk_id: str, text: str) -> Chunk:
@@ -31,15 +30,8 @@ def make_chunk(chunk_id: str, text: str) -> Chunk:
     )
 
 
-def test_get_collection_raises_clear_error_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
-    monkeypatch.delenv("CHROMA_HUGGINGFACE_API_KEY", raising=False)
-    with pytest.raises(ValueError):
-        indexer.get_collection()
-
-
-def test_index_and_search_round_trip_with_mocked_hf_api(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(InferenceClient, "feature_extraction", _fake_feature_extraction)
+def test_index_and_search_round_trip_with_mocked_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ONNXMiniLM_L6_V2, "__call__", _fake_embed)
 
     chunks = [
         make_chunk("doc1:0", "OPT allows up to 90 days of unemployment."),
@@ -52,7 +44,7 @@ def test_index_and_search_round_trip_with_mocked_hf_api(monkeypatch: pytest.Monk
 
 
 def test_ensure_corpus_ingested_only_seeds_when_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(InferenceClient, "feature_extraction", _fake_feature_extraction)
+    monkeypatch.setattr(ONNXMiniLM_L6_V2, "__call__", _fake_embed)
     calls: list[int] = []
     monkeypatch.setattr(bootstrap, "ingest_corpus", lambda: calls.append(1))
 

@@ -3,10 +3,10 @@ from dataclasses import dataclass, replace
 
 import chromadb
 from chromadb.api.models.Collection import Collection
+from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
 from app.config import settings
 from app.ingestion.chunking import Chunk
-from app.ingestion.embeddings import HFInferenceEmbeddingFunction
 
 
 @dataclass(frozen=True)
@@ -42,12 +42,10 @@ def get_collection() -> Collection:
         with _collection_lock:
             if _collection is None:
                 client = chromadb.PersistentClient(path=str(settings.chroma_dir))
-                # Hosted API instead of a local sentence-transformers model:
-                # loading the local model (PyTorch) into a long-running
-                # process was OOMing memory-constrained deployments. This
-                # needs HUGGINGFACE_API_KEY (or CHROMA_HUGGINGFACE_API_KEY)
-                # set in the environment.
-                embedding_fn = HFInferenceEmbeddingFunction(model_name=f"sentence-transformers/{settings.embedding_model}")
+                # chromadb's built-in all-MiniLM-L6-v2 on ONNX Runtime: same
+                # model as before, no PyTorch (the old OOM cause) and no
+                # hosted API (HF's free credits ran out -> 402 on every call).
+                embedding_fn = ONNXMiniLM_L6_V2()
                 _collection = client.get_or_create_collection(
                     name=settings.collection_name,
                     embedding_function=embedding_fn,

@@ -22,15 +22,17 @@ RUN apt-get update \
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install -r backend/requirements.txt
 
+# Bake the ONNX embedding model (~80MB) into the image so cold starts don't
+# download it on the first request.
+RUN python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()(['warmup'])"
+
 COPY backend/ backend/
 COPY data/ data/
 
 WORKDIR /app/backend
 
 # Corpus ingestion happens lazily at runtime on first request instead of
-# here at build time (see app/ingestion/bootstrap.py): embeddings are now
-# computed via a hosted API (HUGGINGFACE_API_KEY), and that credential is
-# only available as a runtime env var, not during `docker build`.
+# here at build time (see app/ingestion/bootstrap.py).
 
 EXPOSE 8000
 

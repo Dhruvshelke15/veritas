@@ -32,12 +32,12 @@ gcloud run deploy veritas-backend \
   --source . \
   --region us-central1 \
   --allow-unauthenticated \
-  --memory 1Gi \
+  --memory 2Gi \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 3 \
   --timeout 300 \
-  --set-env-vars "VERITAS_CLASSIFIER_ENABLED=false,VERITAS_ALLOWED_ORIGINS=http://localhost:5173,ANTHROPIC_API_KEY=sk-ant-...,HUGGINGFACE_API_KEY=hf_..."
+  --set-env-vars "VERITAS_CLASSIFIER_ENABLED=false,VERITAS_ALLOWED_ORIGINS=http://localhost:5173,ANTHROPIC_API_KEY=sk-ant-..."
 ```
 
 `--source .` builds the [`Dockerfile`](Dockerfile) at the repo root via Cloud Build and pushes it to Artifact Registry automatically — no manual `docker build`/`push`. **The first deploy's build takes 10+ minutes** (installing `tensorflow`/`torch`/`chromadb` from scratch, no layer cache yet); this timed out a plain terminal wait more than once during initial setup. If it does, the build itself keeps running server-side regardless — check `gcloud builds list --region us-central1` for `SUCCESS`, then deploy the already-built image directly (fast, no rebuild) instead of re-running `--source .`:
@@ -112,7 +112,5 @@ rm ~/Library/LaunchAgents/com.veritas.uscis-watch.plist
 | Browser console: CORS error on every `/api/*` request | `VERITAS_ALLOWED_ORIGINS` on Cloud Run doesn't include the Vercel origin | Set it (step 3) |
 | Frontend requests go to `localhost:8000` / relative `/api` 404s in production | `VITE_API_BASE_URL` wasn't set before the Vercel build | Set the env var in Vercel project settings and trigger a new deploy (it's baked in at build time, not read at runtime) |
 | `gcloud run deploy --source .` seems to hang / your terminal times out | First build (no layer cache) genuinely takes 10+ minutes | Check `gcloud builds list --region us-central1` — if `SUCCESS`, deploy the already-built image directly (see step 1) instead of re-running `--source .` |
-| `ValueError: The HUGGINGFACE_API_KEY environment variable is not set` (surfaced to the user as a generic "something went wrong" chat error) | Env var wasn't set, or was set on a different service/revision | `gcloud run services update veritas-backend --region us-central1 --update-env-vars HUGGINGFACE_API_KEY=hf_...` |
-| `/ask/stream` hangs for a while (not indefinitely — bounded to ~45s) after the `meta` event | `huggingface_hub.InferenceClient` waiting on a slow/cold response from HF during first-request corpus seeding | Expected occasionally on a cold start; `app/ingestion/embeddings.py` bounds this to 45s so it fails with a real error rather than hanging forever. If it's consistently slow, `--min-instances 1` avoids the cold-seeding path being hit as often |
+| First request after a cold start is slow | Corpus is embedded and indexed on first request (`app/ingestion/bootstrap.py`) | Expected; `--min-instances 1` avoids it |
 | Uploaded documents disappear after a while | Expected — see "Storage is ephemeral by design" above | Mount a persistent volume if you need this to survive restarts |
-| `/ask/stream` returns a clean "Something went wrong" error; logs show `huggingface_hub.errors.HfHubHTTPError: ... 429 Too Many Requests` from `huggingface.co/api/models/...` | HF rate-limited the one-time model-metadata lookup `huggingface_hub` does on a cold start (separate from the actual embedding call, cached per-process afterward via `@lru_cache`) — usually from bursty testing against the same token, not a structural problem | Just retry — confirmed transient in practice, resolves within seconds. If it's persistent, it's a token-level rate limit worth checking on HF's side |

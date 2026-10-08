@@ -7,19 +7,10 @@ langchain-core==1.4.9
 langchain-text-splitters==1.1.2
 pypdf==6.14.2
 chromadb==1.5.9
-# Not used directly for embeddings anymore (see app/ingestion/indexer.py —
-# embeddings are hosted via HuggingFace's Inference API to avoid PyTorch's
-# memory footprint in the deployed process). Still required as an installed
-# package because langchain_text_splitters' __init__.py unconditionally
-# imports SentenceTransformersTokenTextSplitter, even though this project
-# only uses the plain RecursiveCharacterTextSplitter.
+# Not used directly (embeddings are chromadb's built-in ONNX MiniLM, see
+# app/ingestion/indexer.py). Still required because langchain_text_splitters'
+# __init__.py unconditionally imports SentenceTransformersTokenTextSplitter.
 sentence-transformers==5.6.0
-# Direct dependency, not just transitive via sentence-transformers: used
-# explicitly in app/ingestion/embeddings.py to call HF's current
-# router.huggingface.co-based Inference Providers routing (chromadb's own
-# HuggingFaceEmbeddingFunction posts to the decommissioned
-# api-inference.huggingface.co domain instead).
-huggingface_hub==1.24.0
 pytest==9.1.1
 httpx==0.28.1
 anthropic==0.116.0
