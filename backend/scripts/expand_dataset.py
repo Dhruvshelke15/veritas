@@ -69,7 +69,8 @@ def expand_category(
         prompt = build_prompt(label, examples, BATCH_SIZE)
         response = client.messages.create(
             model=settings.anthropic_model,
-            max_tokens=2048,
+            max_tokens=4096,
+            output_config={"effort": settings.anthropic_effort},
             messages=[{"role": "user", "content": prompt}],
         )
         raw = "".join(block.text for block in response.content if block.type == "text")
