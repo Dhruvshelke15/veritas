@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.env
+data/uploads/*
+data/chroma/*
+!data/uploads/.gitkeep
+!data/chroma/.gitkeep
+data/watch/*.log
+node_modules/
+dist/
+.DS_Store
+.vscode/
+.git
+.gcloudignore
+frontend/
