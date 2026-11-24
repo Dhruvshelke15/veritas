@@ -23,6 +23,7 @@ class ClaudeGenerator:
         response = self._client.messages.create(
             model=settings.anthropic_model,
             max_tokens=settings.anthropic_max_tokens,
+            output_config={"effort": settings.anthropic_effort},
             system=system,
             messages=[{"role": "user", "content": user_message}],
         )
@@ -33,6 +34,7 @@ class ClaudeGenerator:
         with self._client.messages.stream(
             model=settings.anthropic_model,
             max_tokens=settings.anthropic_max_tokens,
+            output_config={"effort": settings.anthropic_effort},
             system=system,
             messages=[{"role": "user", "content": user_message}],
         ) as stream:

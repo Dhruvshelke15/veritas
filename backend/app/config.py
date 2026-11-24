@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,8 +24,11 @@ class Settings(BaseSettings):
 
     default_top_k: int = 4
 
-    anthropic_model: str = "claude-haiku-4-5-20251001"
-    anthropic_max_tokens: int = 1024
+    anthropic_model: str = "claude-haiku-5-5"
+    # Haiku 5.5 thinks by default and thinking counts toward max_tokens, so
+    # leave headroom; "low" effort keeps it close to 4.5's no-thinking speed.
+    anthropic_max_tokens: int = 4096
+    anthropic_effort: Literal["low", "medium", "high", "xhigh", "max"] = "low"
 
     classifier_model_path: Path = REPO_ROOT / "data" / "classifier" / "model.keras"
     classifier_reject_threshold: float = 0.7
