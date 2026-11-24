@@ -44,6 +44,7 @@ def _print_text(result_new: list[DiscoveredItem], policy_count: int, alerts_coun
         print(f"\n[{item.source}] {item.title}")
         print(f"  {item.url}")
         print(f"  published: {published} | score: {item.score:.1f} | matched: {', '.join(item.matched_keywords)}")
+        print(f"  approve: python scripts/add_doc.py '{item.url}'")
 
 
 def _notify_macos(items: list[DiscoveredItem]) -> None:
