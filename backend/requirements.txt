@@ -21,3 +21,4 @@ tensorflow==2.21.0; sys_platform == "darwin"
 python-dotenv==1.2.2
 ruff==0.15.22
 beautifulsoup4==4.15.0
+html2text==2025.4.15

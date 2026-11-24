@@ -76,9 +76,12 @@ def test_skips_blank_lines(tmp_path: Path) -> None:
 
 def test_real_golden_set_loads_and_has_expected_size() -> None:
     rows = load_golden_set(settings.golden_set_path)
-    assert 25 <= len(rows) <= 30
+    assert 25 <= len(rows) <= 50
     categories = {row.category for row in rows}
     assert categories == {"factual", "procedural", "advice_seeking", "out_of_scope"}
+    # With only 2-3 per category, a single miss swings that category's score by 30%+.
+    for small in ("advice_seeking", "out_of_scope"):
+        assert sum(row.category == small for row in rows) >= 6
     refusal_rows = [row for row in rows if row.expect_refusal]
     assert len(refusal_rows) >= 2
     assert all(row.expected_source_files == [] for row in refusal_rows)

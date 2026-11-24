@@ -29,7 +29,7 @@ flowchart TB
     end
 
     subgraph eval["Offline eval harness"]
-        Golden["golden_set.jsonl<br/>30 questions"] --> Runner["run_eval.py"]
+        Golden["golden_set.jsonl<br/>38 questions"] --> Runner["run_eval.py"]
         Runner --> Retrieve
         Runner --> Claude
         Runner --> Judge["Claude-as-judge<br/>faithfulness score"]
@@ -45,7 +45,7 @@ flowchart TB
 
 ## Keeping the corpus current
 
-USCIS doesn't publish an RSS feed for policy changes — only email subscriptions (GovDelivery) and searchable listing pages. So instead of subscribing to a feed, `scripts/watch_uscis.py` polls two official listing pages weekly (Policy Manual updates, newsroom alerts), parses new entries by **URL pattern** rather than CSS selectors (update PDFs encode their date in the filename, which survives markup redesigns), scores them against F-1/OPT/STEM/cap-gap keywords, and flags genuinely new, relevant items — deduped against `data/watch/seen.json` so the same item isn't reported twice. It does not auto-ingest anything; a human reviews and decides what belongs in the corpus. See `.github/workflows/uscis-watch.yml` and `backend/app/watch/`.
+USCIS doesn't publish an RSS feed for policy changes — only email subscriptions (GovDelivery) and searchable listing pages. So instead of subscribing to a feed, `scripts/watch_uscis.py` polls two official listing pages weekly (Policy Manual updates, newsroom alerts), parses new entries by **URL pattern** rather than CSS selectors (update PDFs encode their date in the filename, which survives markup redesigns), scores them against F-1/OPT/STEM/cap-gap keywords, and flags genuinely new, relevant items — deduped against `data/watch/seen.json` so the same item isn't reported twice. It does not auto-ingest anything; a human reviews and decides what belongs in the corpus. Approving an item is one command, printed next to each finding: `python scripts/add_doc.py <url>` fetches the page or PDF, converts it to markdown, writes it to `data/corpus/` along with its `manifest.json` entry (which production reseeds from), and indexes it locally. Commit and redeploy to ship it. See `.github/workflows/uscis-watch.yml` and `backend/app/watch/`.
 
 A source that parses to zero items is treated as a failure, not "no updates" — that distinction matters because USCIS blocks bot-like traffic, and a monitor that silently reports "nothing found" when it was actually blocked is worse than no monitor.
 

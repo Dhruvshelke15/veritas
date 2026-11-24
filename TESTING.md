@@ -100,7 +100,7 @@ Note: the classifier fails open by design — a misclassification never produces
 
 ## 5. Full evaluation harness (needs both API keys)
 
-Runs all 30 golden questions through retrieval, generation, and LLM-judged faithfulness scoring, plus classifier accuracy:
+Runs all 38 golden questions through retrieval, generation, and LLM-judged faithfulness scoring, plus classifier accuracy:
 
 ```bash
 cd backend
